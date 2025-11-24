@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import express from "express";
-import { ProxmoxConfiguration } from "@src/proxmoxconfiguration.js";
-import { TaskType, ISsh, IProxmoxExecuteMessage } from "@src/types.js";
-import { ProxmoxExecution } from "@src/proxmox-execution.js";
+import { ProxmoxConfiguration } from "@src/proxmoxconfiguration.mjs";
+import { TaskType, ISsh, IProxmoxExecuteMessage } from "@src/types.mjs";
+import { ProxmoxExecution } from "@src/proxmox-execution.mjs";
 import { existsSync } from "fs";
 import http from "http";
 import path from "path";

@@ -26,23 +26,16 @@
           "description": { "type": "string" },
           "required": { "type": "boolean", "default": false },
           "secure": { "type": "boolean", "default": false },
-          "default": { "type": ["string", "number", "boolean"] },
-          "enumValues": {
+          "default": { "type": ["string", "number", "boolean"] }
+        },
+        "if":  {"properties": {"type": {"const": "enum"}}},
+        "then": { "properties":{"enumValues": {
             "type": "array",
             "items": { "type": "string" }
-          }
-        },
-        "required": ["type", "name"],
-        "if": {
-          "properties": {
-            "type": { "const": "enum" }
-          }
-        },
-        "then": {
-          "required": ["enumValues"]
-        }
-      },
-      "outputs": {
+          }}}
+      }
+    },
+    "outputs": {
         "type": "array",
         "items": {
           "type": "string"
@@ -65,7 +58,10 @@
           "required": ["type", "execute"]
         }
       }
-    }
   },
+  "if":  {"properties": {"type": {"enum": "enum"}}},
+  "then": { "required": ["type", "enumValues"] },
+  "else":  { "required": ["type"] },
+    
   "required": ["commands", "execute_on", "name"]
 }

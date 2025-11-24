@@ -6,12 +6,13 @@
   "module": "nodenext",
   "main": "dist/index.js",
   "bin": {
-    "lxc-exec": "dist/lxc-exec.js",
-    "webapp": "dist/webapp.js"
+    "lxc-exec": "dist/lxc-exec.mjs",
+    "webapp": "dist/webapp.mjs"
   },
   "scripts": {
     "test": "vitest run",
     "build": "tsc --project tsconfig.production.json && tsc-alias -p tsconfig.production.json",
+     "postbuild": "chmod +x ./dist/lxc-exec.mjs  ./dist/webapp.mjs",
     "prettier": "prettier --write ."
   },
   "keywords": [],

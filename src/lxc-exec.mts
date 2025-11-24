@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { ProxmoxConfiguration } from "./proxmoxconfiguration.js";
-import { ProxmoxExecution } from "./proxmox-execution.js";
+import { ProxmoxConfiguration } from "./proxmoxconfiguration.mjs";
+import { ProxmoxExecution } from "./proxmox-execution.mjs";
 // Make sure the types file exists, or update the path if necessary
 // If your types are in a TypeScript file, use './types' instead of './types.js'
 import type { TaskType } from "./types.mjs";
@@ -31,6 +31,20 @@ function printUnresolvedParameters(
   } catch (err) {
     if (err instanceof Error) {
       console.error("Error:", err.message);
+      // Print details if this is a JsonError
+      if ("details" in err && Array.isArray((err as any).details)) {
+        console.error("Details:");
+        for (const detail of (err as any).details) {
+          if (typeof detail === "object" && detail !== null) {
+            const { message, line, column, instancePath, schemaPath } = detail;
+            console.error(
+              `- ${message} (line: ${line}, column: ${column}, instancePath: ${instancePath}, schemaPath: ${schemaPath})`
+            );
+          } else {
+            console.error(`- ${detail}`);
+          }
+        }
+      }
     } else {
       console.error("Error:", err);
     }
@@ -111,6 +125,20 @@ async function main() {
   } catch (err) {
     if (err instanceof Error) {
       console.error("Error:", err.message);
+      // Print details if this is a JsonError
+      if ("details" in err && Array.isArray((err as any).details)) {
+        console.error("Details:");
+        for (const detail of (err as any).details) {
+          if (typeof detail === "object" && detail !== null) {
+            const { message, line, column, instancePath, schemaPath } = detail;
+            console.error(
+              `- ${message} (line: ${line}, column: ${column}, instancePath: ${instancePath}, schemaPath: ${schemaPath})`
+            );
+          } else {
+            console.error(`- ${detail}`);
+          }
+        }
+      }
     } else {
       console.error("Error:", err);
     }

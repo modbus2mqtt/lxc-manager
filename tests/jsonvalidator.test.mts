@@ -14,22 +14,22 @@ describe("JsonValidator", () => {
     __dirname,
     "../json/shared/templates/010-get-latest-os-template.json",
   );
-  const appSchema = join(schemasDir, "application.schema.json");
-  const templateSchema = join(schemasDir, "template.schema.json");
+  const appSchema =  "application.schema.json";
+  const templateSchema = "template.schema.json";
 
   it("should construct and validate all schemas", () => {
-    expect(() => new JsonValidator(schemasDir)).not.toThrow();
+    expect(() => JsonValidator.getInstance(schemasDir)).not.toThrow();
   });
 
   it("should validate modbus2mqtt/application.json", () => {
-    const validator = new JsonValidator(schemasDir);
+    const validator = JsonValidator.getInstance(schemasDir);
     expect(() =>
       validator.serializeJsonFileWithSchema(appFile, appSchema),
     ).not.toThrow();
   });
 
   it("should validate a shared template", () => {
-    const validator = new JsonValidator(schemasDir);
+    const validator = JsonValidator.getInstance(schemasDir);
     expect(() =>
       validator.serializeJsonFileWithSchema(sharedTemplate, templateSchema),
     ).not.toThrow();
@@ -46,7 +46,7 @@ describe("JsonValidator", () => {
       '"installation": { "foo": 1 }',
     );
     writeFileSync(invalidAppFile, broken);
-    const validator = new JsonValidator(schemasDir);
+    const validator = JsonValidator.getInstance(schemasDir);
     let error: any = undefined;
     try {
       validator.serializeJsonFileWithSchema(invalidAppFile, appSchema);

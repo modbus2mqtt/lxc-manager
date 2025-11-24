@@ -7,7 +7,7 @@ import {
   ITemplate,
   TaskType,
 } from "@src/types.mjs";
-import { serializeJsonWithSchema } from "./jsonvalidator.mjs";
+import { JsonValidator } from "./jsonvalidator.mjs";
 
 interface ProxmoxProcessTemplateOpts {
   application: string;
@@ -41,11 +41,13 @@ interface IApplication extends IApplicationWeb {
 export interface ITemplateSchema {}
 
 export class ProxmoxConfigurationError extends Error {
-  errors: string[];
-  constructor(message: string, errors: string[]) {
+  details?: string[];
+  application?: any;
+  constructor(message: string, details?: string[], application?: any) {
     super(message);
     this.name = "ProxmoxConfigurationError";
-    this.errors = errors;
+    if (details) this.details = details;
+    if (application) this.application = application;
   }
 }
 
@@ -107,7 +109,7 @@ class ProxmoxConfiguration {
     private jsonPath: string,
     private localPath: string,
   ) {}
-  // readApps entfällt, da getAllApps jetzt statisch ist
+  // readApps omitted, as getAllApps is now static
 
   listApplications(): IApplicationWeb[] {
     const applications: IApplicationWeb[] = [];
@@ -187,7 +189,9 @@ class ProxmoxConfiguration {
     let application: IApplication | undefined;
     // 2. Validate against schema
     try {
-      application = serializeJsonWithSchema(
+      // Nutze die JsonValidator-Factory (Singleton)
+      const validator = JsonValidator.getInstance(this.schemaPath);
+      application = validator.serializeJsonWithSchema(
         appData,
         path.join(this.schemaPath, "application.schema.json"),
       );
@@ -252,14 +256,17 @@ class ProxmoxConfiguration {
         icon: appData.icon,
         errors,
       };
-      const err = new ProxmoxConfigurationError(
-        errors.length === 1 && errors[0]
-          ? errors[0]
-          : `Multiple errors occurred while processing templates. See 'errors' property for details.`,
-        errors,
-      );
-      (err as any).application = appBase;
-      throw err;
+      if (errors.length === 1 && errors[0]) {
+        // Only one error: throw it directly (as string or error object)
+        throw errors[0];
+      } else {
+        const err = new ProxmoxConfigurationError(
+          `Multiple errors occurred while processing templates. See 'details' property for details.`,
+          errors,
+          appBase
+        );
+        throw err;
+      }
     }
   }
 
@@ -307,7 +314,9 @@ class ProxmoxConfiguration {
     }
     // Validate template against schema
     try {
-      serializeJsonWithSchema(
+      // Nutze die JsonValidator-Factory (Singleton)
+      const validator = JsonValidator.getInstance(this.schemaPath);
+      validator.serializeJsonWithSchema(
         tmplData,
         path.join(this.schemaPath, "template.schema.json"),
       );

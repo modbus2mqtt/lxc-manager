@@ -5,36 +5,55 @@ import ajvErrors from "ajv-errors";
 import { readFileSync, readdirSync } from "fs";
 import path, { resolve, extname, join } from "path";
 
+export class JsonError extends Error {
+  public details: { line: number; message: string }[];
+  public filename: string;
+
+  constructor(filename: string, details: { line: number; message: string }[]) {
+    super(`Json file '${filename}' has errors. Details available`);
+    this.name = 'JsonError';
+    this.filename = filename;
+    this.details = details;
+  }
+}
+
 export class JsonValidator {
+  static instance: JsonValidator | undefined;
+  static getInstance(schemaPath: string, baseSchemas: string[] = ['templatelist.schema.json']): JsonValidator {
+    if (!JsonValidator.instance) {
+      JsonValidator.instance = new JsonValidator(schemaPath, baseSchemas);
+    }
+    return JsonValidator.instance;
+  }
   private ajv: Ajv;
-  constructor(schemasDir: string = resolve("schemas")) {
-    this.ajv = new Ajv({ allErrors: true });
+  private constructor(schemasDir: string = resolve("schemas"), baseSchemas: string[] = ['templatelist.schema.json']) {
+    this.ajv = new Ajv({allErrors: true, 
+            strict: true,
+            allowUnionTypes: true } );
     ajvErrors.default(this.ajv);
     // Validate and add all .schema.json files
     try {
-      const files = readdirSync(schemasDir);
-      files.forEach((file) => {
-        if (extname(file) === ".json") {
+      const files = readdirSync(schemasDir).filter(f => extname(f) === ".json");
+      // 1. Basis-Schemas zuerst
+      for (const file of baseSchemas) {
+        if (files.includes(file)) {
           const schemaPath = join(schemasDir, file);
           const schemaContent = readFileSync(schemaPath, "utf-8");
-          let schema;
-          try {
-            schema = JSON.parse(schemaContent);
-          } catch (e: any) {
-            throw new Error(
-              `Invalid JSON in schema file: ${file}\n${e && (e.message || String(e))}`,
-            );
-          }
-          try {
-            this.ajv.compile(schema); // validate schema itself
-          } catch (e: any) {
-            throw new Error(
-              `Invalid JSON Schema in file: ${file}\n${e && (e.message || String(e))}`,
-            );
-          }
-          this.ajv.addSchema(schema, "./" + file);
+          const schema = JSON.parse(schemaContent);
+          this.ajv.addSchema(schema, file);
+          this.ajv.compile(schema);
         }
-      });
+      }
+      // 2. Alle anderen Schemas
+      for (const file of files) {
+        if (!baseSchemas.includes(file)) {
+          const schemaPath = join(schemasDir, file);
+          const schemaContent = readFileSync(schemaPath, "utf-8");
+          const schema = JSON.parse(schemaContent);
+          this.ajv.addSchema(schema, file);
+          this.ajv.compile(schema);
+        }
+      }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       // Ignore errors when loading schemas (e.g. if directory does not exist)
@@ -45,15 +64,15 @@ export class JsonValidator {
    * Validates and serializes a JSON object against a schema. Throws on validation error.
    * Only supports synchronous schemas (no async validation).
    * @param jsonData The data to validate and serialize
-   * @param schemaPath The path to the schema file
+   * @param schemaId The path to the schema file
    * @returns The validated and typed object
    */
-  public serializeJsonWithSchema<T>(jsonData: unknown, schemaPath: string): T {
-    const schemaKey = "./" + path.basename(schemaPath);
+  public serializeJsonWithSchema<T>(jsonData: unknown, schemaId: string): T {
+    const schemaKey = path.basename(schemaId);
     const validate = this.ajv.getSchema<T>(schemaKey);
     if (!validate) {
       throw new Error(
-        `Schema not found: ${schemaKey} (while validating file: ${schemaPath})`,
+        `Schema not found: ${schemaKey} (while validating file: ${schemaId})`,
       );
     }
     let valid: boolean = false;
@@ -79,36 +98,33 @@ export class JsonValidator {
       }
     } catch (err: any) {
       throw new Error(
-        `Validation error in file '${schemaPath}': ${err && (err.message || String(err))}`,
+        `Validation error in file '${schemaId}': ${err && (err.message || String(err))}`,
       );
     }
     if (!valid) {
-      // Try to add line numbers to errors and collect them in an array
-      let errorDetails = "";
-      let errorLines: number[] = [];
+      let details: { line: number; message: string }[] = [];
       if (validate.errors && originalText && sourceMap) {
-        errorDetails = validate.errors
-          .map((e: any) => {
-            const pointer = sourceMap.pointers[e.instancePath || ""];
-            const line = pointer
-              ? pointer.key
-                ? pointer.key.line + 1
-                : pointer.value.line + 1
-              : undefined;
-            if (typeof line === "number") errorLines.push(line);
-            return `${e.message} at line ${line ?? "?"} (path: ${e.instancePath})`;
-          })
-          .join("\n");
+        details = validate.errors.map((e: any) => {
+          const pointer = sourceMap.pointers[e.instancePath || ""];
+          const line = pointer
+            ? pointer.key
+              ? pointer.key.line + 1
+              : pointer.value.line + 1
+            : -1;
+          return {
+            line,
+            message: e.message ?? "Unknown error",
+          };
+        });
       } else if (validate.errors) {
-        errorDetails = JSON.stringify(validate.errors, null, 2);
+        details = validate.errors.map((e: any) => ({
+          line: -1,
+          message: e.message ?? JSON.stringify(e),
+        }));
       } else {
-        errorDetails = "Unknown error";
+        details = [{ line: -1, message: "Unknown error" }];
       }
-      const err = new Error(
-        `Validation failed for file '${schemaPath}':\n` + errorDetails,
-      );
-      (err as any).errorLines = errorLines;
-      throw err;
+      throw new JsonError(schemaId, details);
     }
     return jsonData as T;
   }

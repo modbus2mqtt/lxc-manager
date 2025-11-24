@@ -3,7 +3,7 @@ import { ICommand, IProxmoxExecuteMessage, ISsh } from "@src/types.mjs";
 import path from "path";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { serializeJsonWithSchema } from "./jsonvalidator.mjs";
+import { JsonValidator } from "./jsonvalidator.mjs";
 export interface IProxmoxRunResult {
   lastSuccessIndex: number;
 }
@@ -18,6 +18,7 @@ export class ProxmoxExecution extends EventEmitter {
   private commands!: ICommand[];
   private inputs!: Record<string, string | number | boolean>;
   public outputs: Map<string, string | number | boolean> = new Map();
+  private validator: JsonValidator;
   constructor(
     commands: ICommand[],
     inputs: { name: string; value: string | number | boolean }[],
@@ -31,6 +32,8 @@ export class ProxmoxExecution extends EventEmitter {
     }
     // Load SSH config on instance creation
     this.ssh = ProxmoxExecution.getSshParameters();
+    // Nutze Singleton-Factory für JsonValidator
+    this.validator = JsonValidator.getInstance(path.join(process.cwd(), "schemas"));
   }
 
   /**
@@ -148,12 +151,8 @@ export class ProxmoxExecution extends EventEmitter {
 
       const json = JSON.parse(stdout);
       // Validate against outputs.schema.json (throws on error)
-      const schemaPath = path.join(
-        process.cwd(),
-        "schemas",
-        "outputs.schema.json",
-      );
-      serializeJsonWithSchema(json, schemaPath);
+
+      this.validator.serializeJsonWithSchema(json, "outputs.schema.json");
       if (Array.isArray(json)) {
         for (const entry of json) {
           this.outputs.set(entry.name, entry.value);

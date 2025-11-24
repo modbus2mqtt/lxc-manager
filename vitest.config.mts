@@ -14,6 +14,6 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "html"],
     },
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.mts"],
   },
 });
