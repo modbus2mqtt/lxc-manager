@@ -1,0 +1,14 @@
+[
+  {
+    "name": "hostname",
+    "value": "test-lxc"
+  },
+  {
+    "name": "packagerpubkey",
+    "value": ""
+  },
+  {
+    "name": "packageurl",
+    "value": ""
+  }
+]

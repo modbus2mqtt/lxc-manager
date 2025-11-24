@@ -1,6 +1,9 @@
 import { EventEmitter } from 'events';
 import { ICommand, IProxmoxExecuteMessage, ISsh } from '@src/types.js';
-
+import path from 'path';
+import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { serializeJsonWithSchema } from './jsonvalidator.js';
 export interface IProxmoxRunResult {
     lastSuccessIndex: number;
 }
@@ -31,8 +34,6 @@ export class ProxmoxExecution extends EventEmitter {
      * Reads SSH parameters from ./local/sshconfig.json. Creates the directory if needed.
      */
     static getSshParameters(): ISsh | null {
-        const fs = require('fs');
-        const path = require('path');
         const dir = path.join(process.cwd(), 'local');
         const file = path.join(dir, 'sshconfig.json');
         if (!fs.existsSync(dir)) {
@@ -56,8 +57,7 @@ export class ProxmoxExecution extends EventEmitter {
      *  ./local/sshconfig.json. Creates the directory if needed.
      */
     static setSshParameters(ssh: ISsh): void {
-        const fs = require('fs');
-        const path = require('path');
+
         const dir = path.join(process.cwd(), 'local');
         const file = path.join(dir, 'sshconfig.json');
         if (!fs.existsSync(dir)) {
@@ -65,55 +65,72 @@ export class ProxmoxExecution extends EventEmitter {
         }
         fs.writeFileSync(file, JSON.stringify(ssh, null, 2), 'utf-8');
     }
-    
     /**
      * Executes a command on the Proxmox host via SSH, with timeout. Parses stdout as JSON and updates outputs.
      * @param command The command to execute
      * @param timeoutMs Timeout in milliseconds
      */
-    protected runOnProxmoxHost(input: string, tmplCommand:ICommand, timeoutMs = 10000, remoteCommand?: string[], sshCommand: string = 'ssh' ): IProxmoxExecuteMessage {
+    protected runOnProxmoxHost(input: string, tmplCommand:ICommand, timeoutMs = 10000, remoteCommand?: string[], sshCommand: string = 'ssh' ): IProxmoxExecuteMessage{
         if (!this.ssh) throw new Error('SSH parameters not set');
         const { host, port } = this.ssh;
-        const { spawnSync } = require('child_process');
         let sshArgs:string[] = [    ]
         if(sshCommand==='ssh')
             sshArgs = [
                 '-o', 'StrictHostKeyChecking=no',
-                '-q', //Negate verbose output
+                '-q', // Suppress SSH diagnostic output
                 '-p', String(port),
-                `${host}`
+                `${host}`,
+                'sh', // Use 'sh' to execute the command
+                '-s',
             ];
         if(remoteCommand){
             sshArgs = sshArgs.concat(remoteCommand);
         }   
-        const proc = spawnSync(sshCommand, sshArgs, { encoding: 'utf-8', timeout: timeoutMs, input });
+        const proc = spawnSync(sshCommand, sshArgs, { encoding: 'utf-8', timeout: timeoutMs, input, stdio: 'pipe' });
         const stdout = proc.stdout || '';
         const stderr = proc.stderr || '';
-        const exitCode = typeof proc.status === 'number' ? proc.status : (typeof proc.code === 'number' ? proc.code : -1);
-        // Try to parse stdout as JSON and update outputs
+        // Only 'status' is available on SpawnSyncReturns<string> in Node.js typings
+        const exitCode = typeof proc.status === 'number' ? proc.status : -1;
+            // Try to parse stdout as JSON and update outputs
+
         try {
-            const json = JSON.parse(stdout);
-            if (typeof json === 'object' && json !== null) {
-                for (const [k, v] of Object.entries(json)) {
-                    switch (typeof v) {
-                        case 'string':
-                        case 'number':
-                        case 'boolean':
-                            this.outputs.set(k, v);
-                            break;
-                        default:
-                            // Ignore unsupported types
-                            break;
+                if(stdout.trim().length===0){
+                    // output is empty but exit code 0
+                    // no outputs to parse
+                    if (exitCode === 0) {
+                        const msg: IProxmoxExecuteMessage = { stderr, commandtext: input, result: "OK", exitCode,command:tmplCommand.name,  execute_on: tmplCommand.execute_on!, index:index++ };
+                        this.emit('message', msg);
+                        return msg;
                     }
+                    else{
+                        const msg: IProxmoxExecuteMessage = { stderr, commandtext: input, result: "ERROR", exitCode,command:tmplCommand.name,  execute_on: tmplCommand.execute_on!, index:index++ };
+                        this.emit('message', msg);
+                        throw new Error(`Command "${tmplCommand.name}" failed with exit code ${exitCode}: ${stderr}`);
+                    }
+                        
                 }
+            
+                const json = JSON.parse(stdout);
+                // Validate against outputs.schema.json (throws on error)
+                const schemaPath = path.join(process.cwd(), 'schemas', 'outputs.schema.json');
+                serializeJsonWithSchema(json, schemaPath);
+                if (Array.isArray(json)) {
+                    for (const entry of json) {
+                        this.outputs.set(entry.name, entry.value);
+                    }
+                } else if (typeof json === 'object' && json !== null) {
+                    this.outputs.set(json.name, json.value);
+                }
+            } catch (e) {
+                const msg: IProxmoxExecuteMessage = { stderr, commandtext: input, result: stdout, exitCode,command:tmplCommand.name,  execute_on: tmplCommand.execute_on!, index:index++ };
+                this.emit('message', msg);
+                throw new Error('Failed to parse command output as JSON: ' + (e as any).message);
             }
-        } catch (e) {
-            // Not JSON, ignore
-        }
-        const msg: IProxmoxExecuteMessage = { stderr, result: stdout, exitCode,command:tmplCommand.name,  execute_on: tmplCommand.execute_on!, index:index++ };
-        this.emit('message', msg);
-        if (exitCode !== 0) {
-            throw new Error(`Command "${tmplCommand.name}" failed with exit code ${exitCode}: ${stderr}`);
+      
+            const msg: IProxmoxExecuteMessage = { stderr, commandtext: input, result: stdout, exitCode,command:tmplCommand.name,  execute_on: tmplCommand.execute_on!, index:index++ };
+            this.emit('message', msg);
+            if (exitCode !== 0) {
+                throw new Error(`Command "${tmplCommand.name}" failed with exit code ${exitCode}: ${stderr}`);
         }
         return msg;
     }
@@ -145,7 +162,6 @@ export class ProxmoxExecution extends EventEmitter {
             const cmd = this.commands[i];
             if (!cmd || typeof cmd !== 'object') continue;
             let execStr = '';
-            const fs = require('fs');
             try {
 
                 if (cmd.type === 'script' && cmd.execute) {

@@ -1,7 +1,8 @@
+
 import * as fs from 'fs';
 import * as path from 'path';
-import { validateJsonAgainstSchema } from '@src/jsonvalidator.js';
 import { ICommand, IParameter, IApplicationWeb, ITemplate, TaskType } from '@src/types.js';
+import { serializeJsonWithSchema } from './jsonvalidator.js';
 
 interface ProxmoxProcessTemplateOpts {
     application: string;
@@ -14,6 +15,28 @@ interface ProxmoxProcessTemplateOpts {
     jsonPath: string;
 }
 
+
+// Interface generated from application.schema.json
+export interface IApplicationSchema {
+    name: string;
+    extends?: string;
+    description?: string;
+    icon?: string;
+    installation?: string[];
+    backup?: string[];
+    restore?: string[];
+    uninstall?: string[];
+    update?: string[];
+    upgrade?: string[];
+}
+interface IApplication extends IApplicationWeb {
+    id: string;
+}   
+
+// Interface generated from template.schema.json
+export interface ITemplateSchema {
+
+}
 
 
 export class ProxmoxConfigurationError extends Error {
@@ -46,32 +69,27 @@ class ProxmoxConfiguration {
     commands: ICommand[] = [];
     parameters: IParameter[] = [];
     _resolvedParams: Set<string> = new Set();
-    allApps:Map<string,string> = new Map();
-    getAllApps(): Map<string, string> {
-        if(this.allApps.size===0   )
-            this.readApps();
-        return this.allApps;
+    static getAllApps(jsonPath: string, localPath: string): Map<string, string> {
+        const allApps = new Map<string, string>();
+        [localPath, jsonPath].forEach(jPath => {
+            const appsDir = path.join(jPath, 'applications');
+            if (fs.existsSync(appsDir))
+                fs.readdirSync(appsDir).filter((f) =>
+                    fs.existsSync(path.join(appsDir, f)) && fs.statSync(path.join(appsDir, f)).isDirectory()
+                    && fs.existsSync(path.join(appsDir, f, 'application.json'))).forEach(f => {
+                        if (!allApps.has(f))
+                            allApps.set(f, path.join(appsDir, f));
+                    });
+        });
+        return allApps;
     }
     constructor( private schemaPath:string, private jsonPath:string, private localPath:string) {
-    
     }
-    readApps():void {
-        this.allApps = new Map();
-        [this.localPath,this.jsonPath ].forEach(jsonPath=> {    
-            const appsDir = path.join(jsonPath, 'applications');
-            if(fs.existsSync(appsDir))
-               fs.readdirSync(appsDir).filter((f) =>
-                fs.existsSync(path.join(appsDir,f)) && fs.statSync(path.join(appsDir, f)).isDirectory()
-                && fs.existsSync(path.join(appsDir, f, 'application.json')) ).forEach(f=>{
-                    if(!this.allApps.has(f))
-                        this.allApps.set(f, path.join(appsDir, f));
-                })
-         })
-        }
+    // readApps entfällt, da getAllApps jetzt statisch ist
 
     listApplications(): IApplicationWeb[] {
         const applications: IApplicationWeb[] = [];
-        for (const [appName, appDir] of this.getAllApps()) {
+        for (const [appName, appDir] of ProxmoxConfiguration.getAllApps(this.jsonPath, this.localPath)) {
             try {
                 const appData = JSON.parse(fs.readFileSync(path.join(appDir, 'application.json'), 'utf-8'));
                 let iconBase64: string | undefined = undefined;
@@ -121,42 +139,46 @@ class ProxmoxConfiguration {
         }
         return applications;
     }
-    loadApplication(application: string, task: TaskType): void {
+    loadApplication(applicationName: string, task: TaskType): void {
         // 1. Read application JSON
-        const appPath = this.getAllApps().get(application);
+        const appPath = ProxmoxConfiguration.getAllApps(this.jsonPath, this.localPath).get(applicationName);
         if(!appPath) {
-            const err = new Error(`Application ${application} not foundn`);
+            const err = new Error(`Application ${applicationName} not found`);
             throw err;
         }
-        const appData: any = JSON.parse(fs.readFileSync(path.join(appPath, 'application.json'), 'utf-8'));
-
+        const appDataFilePath = path.join(appPath, 'application.json');
+        if (!fs.existsSync(appDataFilePath)) {
+            const err = new Error(`Application file not found: ${appDataFilePath}`);
+            throw err;
+        }
+        const appData = JSON.parse(fs.readFileSync(appDataFilePath,  'utf-8'));
+        let application: IApplication | undefined;
         // 2. Validate against schema
-        const validation = validateJsonAgainstSchema(appData, path.join(this.schemaPath, 'application.schema.json'));
-        if (!validation.valid) {
+        try {
+            application =serializeJsonWithSchema(appData, path.join(this.schemaPath, 'application.schema.json'));
+        } catch (err: any) {
             const appBase = {
-                name: appData.name || application,
+                name: appData.name || applicationName,
                 description: appData.description || '',
                 icon: appData.icon,
-                errors: validation.errors
+                errors: err.message
             };
-            const err = new Error('Application JSON does not match schema: ' + JSON.stringify(validation.errors));
-            (err as any).application = appBase;
-            throw err;
+            const error = new Error(appDataFilePath + ' does not match schema: ' + err.message);
+            (error as any).application = appBase;
+            throw error;
         }
         // Check for icon.png in the application directory
-        let icon = appData.icon ?appData.icon: 'icon.png'
+        let icon = application?.icon ? application.icon : 'icon.png';
         const iconPath = path.join(appPath, icon);
         if (fs.existsSync(iconPath)) {
-            (appData as any).icon = icon;
-        } else {
-            (appData as any).icon = undefined;
+            application!.icon = icon;
         }
-        (appData as any).id = application;
+        application!.id = applicationName;
         // 3. Get template list for the task
         const templates: string[]|undefined = appData[task];
         if (!templates || !Array.isArray(templates)) {
             const appBase = {
-                name: appData.name || application,
+                name: appData.name || applicationName,
                 description: appData.description || '',
                 icon: appData.icon,
                 errors: [`Task ${task} not found or not an array in application.json`]
@@ -173,7 +195,7 @@ class ProxmoxConfiguration {
         const errors: string[] = [];
         for (const tmpl of templates) {
             this.#processTemplate({
-                application,
+                application: applicationName,
                 template: tmpl,
                 resolvedParams,
                 visitedTemplates: new Set<string>(),
@@ -186,7 +208,7 @@ class ProxmoxConfiguration {
         this._resolvedParams = resolvedParams;
         if (errors.length > 0) {
             const appBase = {
-                name: appData.name || application,
+                name: appData.name || applicationName,
                 description: appData.description || '',
                 icon: appData.icon,
                 errors
@@ -233,10 +255,12 @@ class ProxmoxConfiguration {
             opts.errors.push(`Failed to read or parse template ${opts.template} in ${foundLocation}: ${e} (requested in: ${opts.requestedIn ?? 'unknown'}${opts.parentTemplate ? ', parent template: ' + opts.parentTemplate : ''})`);
             return;
         }
+        let template: ITemplateSchema;
         // Validate template against schema
-        const tmplValidation = validateJsonAgainstSchema(tmplData, path.join(this.schemaPath, 'template.schema.json'));
-        if (!tmplValidation.valid) {
-            opts.errors.push(`Template ${opts.template} does not match schema: ${JSON.stringify(tmplValidation.errors)}`);
+        try {
+            template = serializeJsonWithSchema(tmplData, path.join(this.schemaPath, 'template.schema.json'));
+        } catch (err: any) {
+            opts.errors.push(`Template ${opts.template} does not match schema: ${err.message}`);
             return;
         }
         // Mark outputs as resolved BEFORE adding parameters
@@ -350,7 +374,7 @@ class ProxmoxConfiguration {
         // ...
     }
     getUnresolvedParameters(): IParameter[] {
-        return this.parameters.filter(param => param.value === undefined && !this._resolvedParams.has(param.name));
+        return this.parameters.filter(param => !this._resolvedParams.has(param.name));
     }
     saveConfiguration(configData: any): void {
         // Implementation to save configuration

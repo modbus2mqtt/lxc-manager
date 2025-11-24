@@ -21,4 +21,4 @@ else
 fi
 template_path="$STORAGE:$TEMPLATE"
 # Output the template path in JSON format
-echo '{ "name": "template_path", "value": "'$template_path'" ,"ostype": "OSTYPE" }'
+echo '[{ "name": "template_path", "value": "'$template_path'"} ,{"name": "ostype", "value": "'$OSTYPE'" }]'

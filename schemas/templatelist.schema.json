@@ -1,0 +1,18 @@
+{
+  "$id": "templatelist.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "oneOf": [{
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+         "before": { "type": "string" },
+         "after": { "type": "string" }
+        }
+      },
+      {"type": "string" }
+    ]
+  }
+  
+}

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import express from 'express';
 import { ProxmoxConfiguration } from '@src/proxmoxconfiguration.js';
 import { TaskType, ISsh, IProxmoxExecuteMessage } from '@src/types.js';

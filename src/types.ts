@@ -25,8 +25,11 @@ export interface ICommand {
     description?: string;
     execute_on?: 'proxmox' | 'lxc';
 }
+
+
 export interface IProxmoxExecuteMessage {
     command: string;
+    commandtext:string
     stderr: string;
     result: string | null;
     exitCode: number;
@@ -34,24 +37,24 @@ export interface IProxmoxExecuteMessage {
     index: number;
 }
 export interface IParameter {
-    name: string;
-    type: 'enum' | 'string' | 'number' | 'boolean';
-    enumValues?: string[];
-    secure?: boolean;
-    description?: string;
-    default?: string | number | boolean;
-    required?: boolean;
-    value?: string | number | boolean;
-    template?: string;
-}
+        name: string;
+        type: 'string' | 'number' | 'boolean';
+        description?: string;
+        required?: boolean;
+        secure?: boolean;
+        default?: string | number | boolean;
+        enumValues?: string[];
+        template?:string;
+    }
 
 export interface ITemplate {
     execute_on: 'proxmox' | 'lxc';
+    if?: boolean;
     name: string;
     description?: string;
-    parameters?: IParameter[];
+    parameters?: Array<IParameter>;
     outputs?: string[];
-    commands: ICommand[];
+    commands: Array<ICommand>;
 }
 export interface IError {   
 

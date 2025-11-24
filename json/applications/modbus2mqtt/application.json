@@ -1,5 +1,4 @@
 {
-    "$schema": "file:/Users/volkmar/proxmox2/schemas/application.schema.json",
     "name": "Modbus2Mqtt Gateway",
     "description": "Modbus2Mqtt Gateway from Modbus RTU/TCP to MQTT and vice versa",
     "installation": [
@@ -7,6 +6,7 @@
         "020-create-lxc.json",
         "030-map-serial.json",
         "040-start-lxc.json",
-        "install.json"
+        "set-download-url.json",
+        "050-download-and-inst-apk.json"
     ]
    }

@@ -15,25 +15,26 @@ fi
 echo "Selected storage: $STORAGE" >&2
 
 # Auto-select VMID if not set
-if [ -z "{{ vm_id }}" ]; then
+if [ -z "" ]; then
   # Find the next free VMID (highest existing + 1)
   VMID=$(pvesh get /cluster/nextid)
 else
-  VMID="{{ vm_id }}"
+  VMID=""
 fi
 
 # Create the container
-pct create $VMID {{ template_path }} \
-  --rootfs "$STORAGE:{{ disk_size }}" \
-  --hostname "{{ hostname }}" \
-  --memory "{{ memory }}" \
-  --net0 name=eth0,bridge="{{ bridge }}",ip=dhcp \
-  --ostype "{{ ostype }}" \
+echo "Creating LXC container with VMID $VMID..." >&2
+pct create $VMID local:alpine-3.22-default_20250617_amd64.tar.xz \
+  --rootfs $STORAGE:4G \
+  --hostname  \
+  --memory 512 \
+  --net0 name=eth0,bridge=vmbr0,ip=dhcp \
+  --ostype alpine \
   --unprivileged 1 >&2
 RC=$? 
 if [ $RC -ne 0 ]; then
   echo "Failed to create LXC container!" >&2
   exit $RC
 fi
-echo "LXC container $VMID ({{ hostname }}) created." >&2
+echo "LXC container $VMID () created." >&2
 echo '{ "name": "vm_id", "value": "'$VMID'" }'
