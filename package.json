@@ -11,7 +11,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsc --project tsconfig.production.json && tsc-alias -p tsconfig.production.json"
+    "build": "tsc --project tsconfig.production.json && tsc-alias -p tsconfig.production.json",
+    "prettier": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -24,11 +25,17 @@
     "@types/jsonschema": "^0.0.5",
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-vitest": "^0.5.4",
     "fs-extra": "^11.3.2",
-    "jest": "^30.2.0",
+    "prettier": "^3.6.2",
     "supertest": "^7.1.4",
     "tsc-alias": "^1.8.16",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.47.0",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.0.12"
   },
   "dependencies": {

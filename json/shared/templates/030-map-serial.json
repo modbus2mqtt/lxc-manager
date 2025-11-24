@@ -1,37 +1,37 @@
 {
- "$schema": "file:/Users/volkmar/proxmox2/schemas/template.schema.json",
-       "execute_on": "proxmox",
+  "$schema": "file:/Users/volkmar/proxmox2/schemas/template.schema.json",
+  "execute_on": "proxmox",
 
-    "name": "Map Serial Device",
-    "description": "Map serial device to VM",
-    "parameters": [
-        {
-            "name": "usb",
-            "type": "boolean",
-            "default": false,
-            "description": "Enable serial device assignment",
-            "required": false
-        },
-        {
-            "name": "serial_host",
-            "type": "string",
-            "required": false,
-            "default": "/dev/ttyUSB0",
-            "description": "Path to the USB device on the Proxmox host"
-        },
-        {
-            "name": "vm_id",
-            "type": "string",
-            "required": true,
-            "description": "ID of the VM to which the USB device will be assigned"
-        }
-    ],
-    "commands": [
-            {
-                "type": "script",
-                "name": "Map Serial Device",
-                "if": "{{ usb }}",
-                "execute": "map-serial-device.sh"
-            }
-        ]
+  "name": "Map Serial Device",
+  "description": "Map serial device to VM",
+  "parameters": [
+    {
+      "name": "usb",
+      "type": "boolean",
+      "default": false,
+      "description": "Enable serial device assignment",
+      "required": false
+    },
+    {
+      "name": "serial_host",
+      "type": "string",
+      "required": false,
+      "default": "/dev/ttyUSB0",
+      "description": "Path to the USB device on the Proxmox host"
+    },
+    {
+      "name": "vm_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the VM to which the USB device will be assigned"
+    }
+  ],
+  "commands": [
+    {
+      "type": "script",
+      "name": "Map Serial Device",
+      "if": "{{ usb }}",
+      "execute": "map-serial-device.sh"
+    }
+  ]
 }

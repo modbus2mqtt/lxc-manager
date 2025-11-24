@@ -1,25 +1,23 @@
 {
-    "$schema": "file:/Users/volkmar/proxmox2/schemas/template.schema.json",
-    "execute_on": "proxmox",
-    "name": "Get Latest OS Template",
-    "description": "Download latest operating system template for Proxmox",
-    "parameters": [
-        {
-            "name": "ostype",
-            "type": "enum",
-            "default": "alpine",
-            "description": "Base template to download",
-            "enumValues": ["alpine", "debian", "ubuntu"]
-        }
-    ],
-    "outputs": [
-        "template_path"
-    ],
-    "commands": [
-            {
-                "type": "script",
-                "name": "Get Latest OS Template",
-                "execute": "get-latest-os-template.sh"
-            }
-    ]
+  "$schema": "file:/Users/volkmar/proxmox2/schemas/template.schema.json",
+  "execute_on": "proxmox",
+  "name": "Get Latest OS Template",
+  "description": "Download latest operating system template for Proxmox",
+  "parameters": [
+    {
+      "name": "ostype",
+      "type": "enum",
+      "default": "alpine",
+      "description": "Base template to download",
+      "enumValues": ["alpine", "debian", "ubuntu"]
+    }
+  ],
+  "outputs": ["template_path"],
+  "commands": [
+    {
+      "type": "script",
+      "name": "Get Latest OS Template",
+      "execute": "get-latest-os-template.sh"
+    }
+  ]
 }

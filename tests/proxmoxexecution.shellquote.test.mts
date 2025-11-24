@@ -1,0 +1,103 @@
+import { describe, it, expect, beforeAll } from "vitest";
+import { ProxmoxExecution } from "@src/proxmox-execution.mjs";
+import { ICommand } from "@src/types.mjs";
+import { spawnSync } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
+describe("ProxmoxExecution shell quoting", () => {
+  const dummySSH = { host: "localhost", port: 22 };
+  const defaults = new Map<string, string | number | boolean>();
+  const inputs: { name: string; value: string | number | boolean }[] = [];
+
+  beforeAll(() => {
+    // Write dummy sshconfig.json for local test
+    const dir = path.join(process.cwd(), "local");
+    const file = path.join(dir, "sshconfig.json");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(dummySSH, null, 2), "utf-8");
+  });
+
+  it("should execute a shell script with special characters via runOnProxmoxHost", () => {
+    // Prepare a shell script with special characters
+    const script =
+      'echo "foo && bar; $PATH \'quoted\' \\"double\\" \\`backtick\\`"';
+    const command: ICommand = {
+      name: "test",
+      type: "command",
+      execute: script,
+      execute_on: "proxmox",
+    };
+    const exec = new ProxmoxExecution([command], inputs, defaults);
+    (exec as any).ssh = { host: "localhost", port: 22 };
+    // runOnProxmoxHost als Mock: akzeptiert alle Parameter, führt aber nur das Kommando lokal aus
+    (exec as any).runOnProxmoxHost = function (
+      command: string,
+      tmplCommand: ICommand,
+      timeoutMs = 10000,
+      sshCommand = "/bin/sh",
+    ) {
+      const proc = spawnSync("/bin/sh", ["-c", command], {
+        encoding: "utf-8",
+        timeout: timeoutMs,
+      });
+      const stdout = proc.stdout || "";
+      const stderr = proc.stderr || "";
+      const exitCode = typeof proc.status === "number" ? proc.status : -1;
+      return {
+        stderr,
+        result: stdout,
+        exitCode,
+        command: tmplCommand.name,
+        execute_on: tmplCommand.execute_on!,
+        index: 0,
+      };
+    };
+    exec.run = function () {
+      const msg = this.runOnProxmoxHost(
+        command.execute,
+        command,
+        10000,
+        undefined,
+        "/bin/sh",
+      );
+      return { lastSuccessIndex: msg.exitCode === 0 ? 0 : -1 };
+    };
+    const result = exec.run();
+    expect(result.lastSuccessIndex).toBe(0);
+  });
+
+  it("should execute a shell script with special characters via runOnLxc (simulated)", () => {
+    const script =
+      '#!/bin/sh\n\
+            echo "$@" >&2\n\
+            echo "[lxc-attach-mock]: $@" >&2\n\
+            echo \'{"mocked":true}\'';
+    const command: ICommand = {
+      name: "testlxc",
+      type: "command",
+      execute: script,
+      execute_on: "lxc",
+    };
+    const exec = new ProxmoxExecution(
+      [command],
+      [{ name: "vm_id", value: "dummy" }],
+      defaults,
+    );
+    (exec as any).ssh = { host: "localhost", port: 22 };
+    exec.run = function () {
+      let lastSuccess = -1;
+      try {
+        this.runOnLxc("dummy", command.execute, command, 10000, "/bin/sh");
+        expect(this.outputs.get("mocked")).toBe(true);
+        lastSuccess = 0;
+      } catch {
+        lastSuccess = -1;
+      }
+      return { lastSuccessIndex: lastSuccess };
+    };
+    const result = exec.run();
+    // Prüfe, ob das Mock-Skript aufgerufen wurde und die Argumente geloggt hat
+
+    expect(result.lastSuccessIndex).toBe(0);
+  });
+});

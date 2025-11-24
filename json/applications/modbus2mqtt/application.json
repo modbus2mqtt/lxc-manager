@@ -1,12 +1,12 @@
 {
-    "name": "Modbus2Mqtt Gateway",
-    "description": "Modbus2Mqtt Gateway from Modbus RTU/TCP to MQTT and vice versa",
-    "installation": [
-        "010-get-latest-os-template.json",
-        "020-create-lxc.json",
-        "030-map-serial.json",
-        "040-start-lxc.json",
-        "set-download-url.json",
-        "050-download-and-inst-apk.json"
-    ]
-   }
+  "name": "Modbus2Mqtt Gateway",
+  "description": "Modbus2Mqtt Gateway from Modbus RTU/TCP to MQTT and vice versa",
+  "installation": [
+    "010-get-latest-os-template.json",
+    "020-create-lxc.json",
+    "030-map-serial.json",
+    "040-start-lxc.json",
+    "set-download-url.json",
+    "050-download-and-inst-apk.json"
+  ]
+}

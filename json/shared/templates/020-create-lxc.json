@@ -1,57 +1,55 @@
 {
-    "$schema": "file:/Users/volkmar/proxmox2/schemas/template.schema.json",
-    "execute_on": "proxmox",
-    "name": "Create LXC Container",
-    "description": "Create LXC container on Proxmox host",
-    "parameters": [
-        {
-            "name": "vm_id",
-            "type": "number",
-            "default": "",
-            "description": "ID of the virtual machine"
-        },
-        {
-            "name": "template_path",
-            "type": "string",
-            "required": true,
-            "description": "Path to the LXC template (e.g. local:vztmpl/alpine-3.19-default_20231107_amd64.tar.xz)"
-        },
-        {
-            "name": "disk_size",
-            "type": "string",
-            "required": true,
-            "default": "4G",
-            "description": "Disk size for the container (e.g. 4G)"
-        },
-        {
-            "name": "memory",
-            "type": "number",
-            "required": true,
-            "default": 512,
-            "description": "Memory for the container in MB"
-        },
-        {
-            "name": "bridge",
-            "type": "string",
-            "required": true,
-            "default": "vmbr0",
-            "description": "Network bridge to use"
-        },
-        {
-            "name": "hostname",
-            "type": "string",
-            "required": true,
-            "description": "Hostname for the LXC container"
-        }
-    ],
-    "outputs": [
-        "vm_id"
-    ],
-    "commands": [
-            {
-                "type": "script",
-                "name": "Create LXC Container",
-                "execute": "create-lxc-container.sh"
-             }
-    ]
+  "$schema": "file:/Users/volkmar/proxmox2/schemas/template.schema.json",
+  "execute_on": "proxmox",
+  "name": "Create LXC Container",
+  "description": "Create LXC container on Proxmox host",
+  "parameters": [
+    {
+      "name": "vm_id",
+      "type": "number",
+      "default": "",
+      "description": "ID of the virtual machine"
+    },
+    {
+      "name": "template_path",
+      "type": "string",
+      "required": true,
+      "description": "Path to the LXC template (e.g. local:vztmpl/alpine-3.19-default_20231107_amd64.tar.xz)"
+    },
+    {
+      "name": "disk_size",
+      "type": "string",
+      "required": true,
+      "default": "4G",
+      "description": "Disk size for the container (e.g. 4G)"
+    },
+    {
+      "name": "memory",
+      "type": "number",
+      "required": true,
+      "default": 512,
+      "description": "Memory for the container in MB"
+    },
+    {
+      "name": "bridge",
+      "type": "string",
+      "required": true,
+      "default": "vmbr0",
+      "description": "Network bridge to use"
+    },
+    {
+      "name": "hostname",
+      "type": "string",
+      "required": true,
+      "description": "Hostname for the LXC container"
+    }
+  ],
+  "outputs": ["vm_id"],
+  "commands": [
+    {
+      "type": "script",
+      "name": "Create LXC Container",
+      "execute": "create-lxc-container.sh"
+    }
+  ]
 }

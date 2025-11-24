@@ -1,33 +1,33 @@
 {
-    "execute_on": "lxc",
-    "name": "Install Modbus2Mqtt",
-    "description": "Install modbus2mqtt on lxc container",
-    "parameters": [
-        {
-            "name": "packageurl",
-            "type": "string",
-            "required": true,
-            "description": "URL of the Modbus2Mqtt package to be installed"
-        },
-        {
-            "name": "packagerpubkeyurl",
-            "type": "string",
-            "required": true,
-            "description": "Public key for verifying the package"
-        }
-    ],
-    "commands": [
-            {
-                    "type": "command",
-                    "name": "Download Package",
-                    "execute": "wget {{ packageurl }} -O packagefile",
-                    "description": "Download package to the LXC container"
-            }, 
-            {
-                    "type": "command",
-                    "name": "Install Package",
-                    "execute": "apk add --allow-untrusted --key \"$(wget -qO- '{{ packagerpubkeyurl }}')\" packagefile",
-                    "description": "Verify and install package on the LXC container"
-            }  
-    ]
+  "execute_on": "lxc",
+  "name": "Install Modbus2Mqtt",
+  "description": "Install modbus2mqtt on lxc container",
+  "parameters": [
+    {
+      "name": "packageurl",
+      "type": "string",
+      "required": true,
+      "description": "URL of the Modbus2Mqtt package to be installed"
+    },
+    {
+      "name": "packagerpubkeyurl",
+      "type": "string",
+      "required": true,
+      "description": "Public key for verifying the package"
+    }
+  ],
+  "commands": [
+    {
+      "type": "command",
+      "name": "Download Package",
+      "execute": "wget {{ packageurl }} -O packagefile",
+      "description": "Download package to the LXC container"
+    },
+    {
+      "type": "command",
+      "name": "Install Package",
+      "execute": "apk add --allow-untrusted --key \"$(wget -qO- '{{ packagerpubkeyurl }}')\" packagefile",
+      "description": "Verify and install package on the LXC container"
+    }
+  ]
 }

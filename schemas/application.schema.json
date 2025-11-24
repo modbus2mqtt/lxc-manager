@@ -1,10 +1,10 @@
 {
   "$id": "application",
- "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
     "name": { "type": "string" },
-    "extends": { "type": "string", "pattern": "^(local:|[^:]+).*$"  },
+    "extends": { "type": "string", "pattern": "^(local:|[^:]+).*$" },
     "description": { "type": "string" },
     "icon": { "type": "string", "default": "icon.png" },
     "installation": { "$ref": "./templatelist.schema.json" },

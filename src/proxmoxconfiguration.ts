@@ -1,8 +1,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { ICommand, IParameter, IApplicationWeb, ITemplate, TaskType } from '@src/types.js';
-import { serializeJsonWithSchema } from './jsonvalidator.js';
+import { ICommand, IParameter, IApplicationWeb, ITemplate, TaskType } from '@src/types.mjs';
+import { serializeJsonWithSchema } from './jsonvalidator.mjs';
 
 interface ProxmoxProcessTemplateOpts {
     application: string;
@@ -255,10 +255,9 @@ class ProxmoxConfiguration {
             opts.errors.push(`Failed to read or parse template ${opts.template} in ${foundLocation}: ${e} (requested in: ${opts.requestedIn ?? 'unknown'}${opts.parentTemplate ? ', parent template: ' + opts.parentTemplate : ''})`);
             return;
         }
-        let template: ITemplateSchema;
         // Validate template against schema
         try {
-            template = serializeJsonWithSchema(tmplData, path.join(this.schemaPath, 'template.schema.json'));
+            serializeJsonWithSchema(tmplData, path.join(this.schemaPath, 'template.schema.json'));
         } catch (err: any) {
             opts.errors.push(`Template ${opts.template} does not match schema: ${err.message}`);
             return;

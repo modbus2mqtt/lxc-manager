@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
-import { ICommand, IProxmoxExecuteMessage, ISsh } from '@src/types.js';
+import { ICommand, IProxmoxExecuteMessage, ISsh } from '@src/types.mjs';
 import path from 'path';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { serializeJsonWithSchema } from './jsonvalidator.js';
+import { serializeJsonWithSchema } from './jsonvalidator.mjs';
 export interface IProxmoxRunResult {
     lastSuccessIndex: number;
 }
@@ -45,6 +45,7 @@ export class ProxmoxExecution extends EventEmitter {
                 if (data && typeof data.host === 'string' && typeof data.port === 'number') {
                     return { host: data.host, port: data.port };
                 }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {
                 // ignore parse errors, treat as not set
             }

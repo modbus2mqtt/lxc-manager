@@ -1,20 +1,20 @@
 {
-    "$schema": "file:/Users/volkmar/proxmox2/schemas/template.schema.json",
-    "execute_on": "proxmox",
-    "name": "Start LXC Container",
-    "description": "Start existing LXC container on Proxmox host",
-    "parameters": [
-        {
-            "name": "vm_id",
-            "type": "number",
-            "description": "ID of the virtual machine"
-        }
-    ],
-    "commands": [
-            {
-                "type": "command",
-                "name": "Start LXC Container",
-                "execute": "pct start {{ vm_id }}"
-             }
-        ]
+  "$schema": "file:/Users/volkmar/proxmox2/schemas/template.schema.json",
+  "execute_on": "proxmox",
+  "name": "Start LXC Container",
+  "description": "Start existing LXC container on Proxmox host",
+  "parameters": [
+    {
+      "name": "vm_id",
+      "type": "number",
+      "description": "ID of the virtual machine"
+    }
+  ],
+  "commands": [
+    {
+      "type": "command",
+      "name": "Start LXC Container",
+      "execute": "pct start {{ vm_id }}"
+    }
+  ]
 }
