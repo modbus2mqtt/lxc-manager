@@ -19,8 +19,7 @@
   "outputs": ["packagerpubkey", "packageurl"],
   "commands": [
     {
-      "type": "script",
-      "execute": "set-download-url.sh"
+      "script": "set-download-url.sh"
     }
   ]
 }

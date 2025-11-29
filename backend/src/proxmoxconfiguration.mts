@@ -1,8 +1,10 @@
 import fs from "fs";
 import * as path from "path";
-import { IParameter, IApplicationWeb, TaskType } from "@src/types.mjs";
-import { IJsonErrorDetails, JsonError } from "./jsonvalidator.mjs";
-import { IConfiguredPathes } from "@src/proxmoxconftypes.mjs";
+import { IApplicationWeb, IJsonError, TaskType } from "@src/types.mjs";
+import {
+  IConfiguredPathes,
+  ProxmoxConfigurationError,
+} from "@src/proxmoxconftypes.mjs";
 import { TemplateProcessor } from "@src/templateprocessor.mjs";
 
 export interface IApplicationBase {
@@ -29,28 +31,22 @@ export interface IReadApplicationOptions {
     templates: string[];
   }[];
 }
-// Interface generated from template.schema.json
-export interface ITemplateSchema {}
 
-export class ProxmoxConfigurationError extends JsonError {
-  constructor(application: string, details?: IJsonErrorDetails[]) {
+export class ProxmoxLoadApplicationError extends ProxmoxConfigurationError {
+  constructor(
+    application: string,
+    private task?: string,
+    details?: IJsonError[],
+  ) {
     super(application, details);
-    this.name = "ProxmoxConfigurationError";
+    this.name = "ProxmoxApplicationError";
     this.filename = application;
   }
 }
-export class ProxmoxLoadApplicationError extends JsonError {
-  constructor(
-    application: string,
-    task: string,
-    details?: IJsonErrorDetails[],
-  ) {
-    super(application, details);
-    this.name = "ProxmoxLoadApplicationError";
-    this.filename = application + "/" + (task ? task : "");
-  }
-}
-class ProxmoxConfiguration implements IConfiguredPathes {
+// Interface generated from template.schema.json
+export interface ITemplateSchema {}
+
+export class ProxmoxConfiguration implements IConfiguredPathes {
   /**
    * Liest die application.json für eine Anwendung, unterstützt Vererbung und Template-Listen-Manipulation.
    * @param application Name der Anwendung (ggf. mit json: Präfix)
@@ -97,7 +93,6 @@ class ProxmoxConfiguration implements IConfiguredPathes {
           const iconBuffer = fs.readFileSync(iconPath);
           iconBase64 = iconBuffer.toString("base64");
         }
-        // Try to load the application (including template validation etc.)
         try {
           const templateProcessor = new TemplateProcessor(this);
           templateProcessor.loadApplication(appName, "installation");
@@ -110,37 +105,43 @@ class ProxmoxConfiguration implements IConfiguredPathes {
           });
         } catch (err) {
           // On error: attach application object with errors
-          const errorApp = (err as any).application || {
-            name: appData.name || appName,
-            description: appData.description || "",
-            icon: appData.icon,
-            errors: [(err as any).message || "Unknown error"],
-          };
-          applications.push({
-            name: errorApp.name,
-            description: errorApp.description,
-            icon: errorApp.icon,
-            iconContent: iconBase64,
-            id: appName,
-            errors: errorApp.errors,
-          } as any);
+          if (err instanceof ProxmoxConfigurationError && err.details) {
+            applications.push({
+              name: appData.name,
+              description: appData.description,
+              icon: appData.icon,
+              iconContent: iconBase64,
+              id: appName,
+              errors: err.details,
+            });
+          } else {
+            // Error loading application.json or other error
+            const errorApp = (err as any).application || {
+              name: appData.name || appName,
+              description: appData.description || "",
+              icon: appData.icon,
+              errors: [(err as any).message || "Unknown error"],
+            };
+            applications.push({
+              name: errorApp.name,
+              description: errorApp.description,
+              icon: errorApp.icon,
+              iconContent: iconBase64,
+              id: appName,
+              errors: errorApp.errors,
+            } as any);
+          }
         }
-      } catch (e) {
-        // Error parsing application.json
+      } catch (err) {
+        // Error loading application.json
         applications.push({
           name: appName,
           description: "",
-          icon: undefined,
-          iconContent: undefined,
           id: appName,
-          errors: [
-            typeof e === "string" ? e : (e as any).message || "Unknown error",
-          ],
-        } as any);
+          errors: [(err as any).message || "Unknown error"],
+        });
       }
     }
     return applications;
   }
 }
-
-export { ProxmoxConfiguration };

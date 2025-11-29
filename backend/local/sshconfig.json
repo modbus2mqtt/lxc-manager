@@ -1,4 +1,4 @@
 {
-  "host": "root@pve1",
-  "port": 22
+  "host": "localhost",
+  "port": 2222
 }

@@ -121,10 +121,9 @@ describe("ProxmoxExecution", () => {
     }
     const commands: ICommand[] = [
       {
-        type: "script",
-        execute: scriptPath,
+        script: scriptPath,
         name: "test",
-        execute_on: "proxmox",
+        execute_on: "proxmox"
       },
     ];
     const inputs = [{ name: "myvar", value: "replacedValue" }];
@@ -156,8 +155,7 @@ describe("ProxmoxExecution", () => {
     }
     const commands: ICommand[] = [
       {
-        type: "command",
-        execute: "{{ somevariable }}",
+        command: "{{ somevariable }}",
         name: "test",
         execute_on: "proxmox",
       },
@@ -229,26 +227,23 @@ describe("ProxmoxExecution", () => {
     }
     const commands: ICommand[] = [
       {
-        type: "command",
-        execute: 'echo "{\"foo\": \"bar\"}"',
+        command: 'echo "{\"foo\": \"bar\"}"',
         name: "test",
         execute_on: "proxmox",
       },
       {
-        type: "command",
-        execute: 'echo "{\"baz\": 99}"',
+        command: 'echo "{\"baz\": 99}"',
         name: "test",
         execute_on: "proxmox",
       },
       {
-        type: "command",
-        execute: 'echo "{\"vm_id\": 100}"',
+        
+        command: 'echo "{\"vm_id\": 100}"',
         name: "test",
         execute_on: "proxmox",
       },
       {
-        type: "command",
-        execute: 'echo "{\"foo\": \"baz\"}"',
+        command: 'echo "{\"foo\": \"baz\"}"',
         name: "test",
         execute_on: "proxmox",
       },
@@ -302,14 +297,12 @@ describe("ProxmoxExecution", () => {
     }
     const commands: ICommand[] = [
       {
-        type: "command",
-        execute: 'echo "{\"foo\": \"bar\"}"',
+        command: 'echo "{\"foo\": \"bar\"}"',
         name: "test",
         execute_on: "proxmox",
       },
       {
-        type: "command",
-        execute: 'echo "{\"foo\": \"baz99\"}"',
+        command: 'echo "{\"foo\": \"baz99\"}"',
         name: "test",
         execute_on: "proxmox",
       },
@@ -347,14 +340,17 @@ describe("ProxmoxExecution", () => {
     }
     const lxcCommands: ICommand[] = [
       {
-        type: "command",
-        execute: 'echo "{\"foo\": \"bar\"}"',
+        command: 'echo "{\"foo\": \"bar\"}"',
         name: "test",
         execute_on: "proxmox",
       },
       {
-        type: "command",
-        execute: 'echo "echo hi"',
+        command: 'echo "{\"foo\": \"bar\"}"',
+        name: "test",
+        execute_on: "proxmox",
+      },
+      {
+        command: 'echo "echo hi"',
         name: "test",
         execute_on: "lxc",
       },
@@ -395,14 +391,17 @@ describe("ProxmoxExecution", () => {
     }
     const commands: ICommand[] = [
       {
-        type: "command",
-        execute: 'echo "{\"foo\": \"bar\"}"',
+        command: 'echo "{\"foo\": \"bar\"}"',
         name: "test",
         execute_on: "proxmox",
       },
       {
-        type: "command",
-        execute: 'echo "{\"baz\": 99}"',
+        command: 'echo "{\"foo\": \"baz99\"}"',
+        name: "test",
+        execute_on: "proxmox",
+      },
+      {
+        command: 'echo "{\"baz\": 99}"',
         name: "test",
         execute_on: "proxmox",
       },
@@ -411,8 +410,8 @@ describe("ProxmoxExecution", () => {
     const exec = new TestExec(commands, inputs, new Map());
     ProxmoxExecution.setSshParameters(sshParams);
     const result = exec.run();
-    expect(typeof result.lastSuccessIndex).toBe("number");
-    expect(result.lastSuccessIndex).toBe(commands.length - 1);
+    expect(typeof result?.lastSuccessfull).toBe("number");
+    expect(result?.lastSuccessfull).toBe(commands.length - 1);
   });
 
   it("should emit error message if SSH connection fails", async () => {
@@ -438,8 +437,7 @@ describe("ProxmoxExecution", () => {
     }
     const commands: ICommand[] = [
       {
-        type: "command",
-        execute: 'echo "{\"foo\": \"bar\"}"',
+        command: 'echo "{\"foo\": \"bar\"}"',
         name: "test",
         execute_on: "proxmox",
       },

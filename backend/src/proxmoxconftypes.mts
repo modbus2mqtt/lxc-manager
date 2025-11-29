@@ -1,8 +1,8 @@
-import { IJsonErrorDetails, JsonError } from "./jsonvalidator.mjs";
-import { TaskType } from "./types.mjs";
+import { JsonError } from "./jsonvalidator.mjs";
+import { IJsonError, TaskType } from "./types.mjs";
 
 export class ProxmoxConfigurationError extends JsonError {
-  constructor(application: string, details?: IJsonErrorDetails[]) {
+  constructor(application: string, details?: IJsonError[]) {
     super(application, details);
     this.name = "ProxmoxConfigurationError";
     this.filename = application;

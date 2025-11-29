@@ -87,7 +87,8 @@ describe("ProxmoxConfiguration.loadApplication", () => {
     helper.writeTemplate(appName, templateName, {
       execute_on: "lxc",
       name: "Recursive Template",
-      commands: [{ type: "template", execute: templateName }],
+      commands: [{ 
+        template: templateName }],
     });
     // Setze dieses Template als einziges in installation
     const app = helper.readApplication(appName);
@@ -109,7 +110,7 @@ describe("ProxmoxConfiguration.loadApplication", () => {
     helper.writeTemplate(appName, templateName, {
       execute_on: "proxmox",
       name: "Missing Script Template",
-      commands: [{ type: "script", execute: "nonexistent-script.sh" }],
+      commands: [{ script: "nonexistent-script.sh" }],
     });
     // Set this template as the only one in installation
     const app = helper.readApplication(appName);
@@ -159,7 +160,7 @@ describe("ProxmoxConfiguration.loadApplication", () => {
     helper.writeTemplate(appName, templateName, {
       execute_on: "proxmox",
       name: "Missing Param Command Template",
-      commands: [{ type: "command", execute: "echo {{ missing_param }}" }],
+      commands: [{ command: "echo {{ missing_param }}" }],
     });
     // Set this template as the only one in installation
     const app = helper.readApplication(appName);

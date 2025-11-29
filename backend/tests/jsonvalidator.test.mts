@@ -40,7 +40,7 @@ describe("JsonValidator", () => {
     const tmp = mkdtempSync(join(tmpdir(), "jsonvalidator-test-"));
     const invalidAppFile = join(tmp, "application.json");
     const original = require("fs").readFileSync(appFile, "utf-8");
-    // Füge absichtlich einen Fehler ein (z.B. Objekt statt Array für installation)
+    // Intentionally insert an error (e.g. object instead of array for installation)
     const broken = original.replace(
       /"installation"\s*:\s*\[[^\]]*\]/,
       '"installation": { "foo": 1 }',
@@ -54,12 +54,11 @@ describe("JsonValidator", () => {
       error = e;
     }
     expect(error).toBeDefined();
-    expect(error.message).toMatch(/has errors/);
     expect(error.details[0].line).toBe(4);
     expect(Array.isArray(error.details)).toBe(true);
-    // Die Zeilennummer sollte im Bereich der modifizierten Zeile liegen
+    // The line number should be in the range of the modified line
     expect(error.details.some((d: any) => d.line > 0)).toBe(true);
-    // Aufräumen
+    // Cleanup
     rmSync(tmp, { recursive: true, force: true });
   });
 });

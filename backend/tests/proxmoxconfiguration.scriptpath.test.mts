@@ -37,7 +37,7 @@ describe("ProxmoxConfiguration script path resolution", () => {
       templatePath,
       JSON.stringify({
         commands: [
-          { type: "script", execute: scriptName, execute_on: "proxmox" },
+          { script: scriptName, execute_on: "proxmox" },
         ],
         parameters: [{ name: "param", type: "string" }],
         outputs: [],
@@ -63,8 +63,8 @@ describe("ProxmoxConfiguration script path resolution", () => {
     const templateProcessor = new TemplateProcessor(config);
 
     const result = templateProcessor.loadApplication(appName, "installation");
-    const scriptCmd = result.commands.find((cmd) => cmd.type === "script");
+    const scriptCmd = result.commands.find((cmd) => cmd.script !== undefined);
     expect(scriptCmd).toBeDefined();
-    expect(scriptCmd!.execute).toBe(scriptPath);
+    expect(scriptCmd!.script).toBe(scriptPath);
   });
 });

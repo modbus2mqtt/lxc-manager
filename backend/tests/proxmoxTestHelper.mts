@@ -25,8 +25,10 @@ export interface IParameter {
 
 export interface ICommand {
   execute_on?: "proxmox" | "lxc";
-  type: "command" | "script" | "template";
-  execute: string;
+  command?: string;
+  script?: string;
+  template?: string;
+  name?: string;
   description?: string;
 }
 

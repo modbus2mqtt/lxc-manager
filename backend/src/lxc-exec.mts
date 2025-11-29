@@ -184,7 +184,6 @@ async function main() {
       console.error("Error:", err);
     }
     process.exit(2);
-    
   }
 }
 function printDetails(details: any[], level = 1) {

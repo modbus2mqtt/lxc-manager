@@ -20,13 +20,13 @@
     {
       "type": "command",
       "name": "Download Package",
-      "execute": "wget {{ packageurl }} -O packagefile.apk",
+      "command": "wget {{ packageurl }} -O packagefile.apk 1>&2",
       "description": "Download package to the LXC container"
     },
     {
       "type": "command",
       "name": "Install Package",
-      "execute": "apk add --allow-untrusted --key \"$(wget -qO- '{{ packagerpubkeyurl }}')\" ./packagefile.apk",
+      "command": "apk add --allow-untrusted --key \"$(wget -qO- '{{ packagerpubkeyurl }}')\" ./packagefile.apk 1>&2",
       "description": "Verify and install package on the LXC container"
     }
   ]

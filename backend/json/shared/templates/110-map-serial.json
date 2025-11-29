@@ -28,10 +28,9 @@
   ],
   "commands": [
     {
-      "type": "script",
       "name": "Map Serial Device",
       "if": "{{ usb }}",
-      "execute": "map-serial-device.sh"
+      "script": "map-serial-device.sh"
     }
   ]
 }

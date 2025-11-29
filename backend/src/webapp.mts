@@ -72,6 +72,8 @@ export class ProxmoxWebApp {
           exec.run();
 
           res.json({ success: true });
+          res.status(200);
+        
         } catch (err: any) {
           res
             .status(500)
@@ -85,6 +87,7 @@ export class ProxmoxWebApp {
         const ssh: ISsh | null = ProxmoxExecution.getSshParameters();
         if (ssh) {
           res.json(ssh);
+          res.status(200);
         } else {
           res.status(404).json({ error: "SSH config not set" });
         }
@@ -112,7 +115,7 @@ export class ProxmoxWebApp {
       }
       try {
         ProxmoxExecution.setSshParameters(ssh);
-        res.json({ success: true });
+        res.json({ success: true }).status(200);
       } catch (err: any) {
         res.status(500).json({ error: err.message });
       }
@@ -137,7 +140,7 @@ export class ProxmoxWebApp {
             unresolvedParameters: loaded.parameters.filter(
               (param) => !param.default,
             ),
-          });
+          }).status(200);
         } catch (err: any) {
           res
             .status(400)
@@ -161,7 +164,7 @@ export class ProxmoxWebApp {
             ? config.listApplications()
             : [];
 
-        res.json(applications.concat(testApplications));
+        res.json(applications.concat(testApplications)).status(200);
       } catch (err: any) {
         res.status(500).json({ error: err.message });
       }

@@ -1,4 +1,8 @@
-
+export interface IJsonError extends Error {
+  line?: number;
+  message: string;
+  details: IJsonError[] | undefined;
+}
 export interface ISsh {
   host: string;
   port: number;
@@ -15,7 +19,7 @@ export interface IApplicationWeb {
   icon?: string | undefined;
   iconContent?: string | undefined;
   id: string;
-  errors?: string[];
+  errors?: IJsonError[];
 }
 export type TaskType =
   | "installation"
@@ -26,25 +30,26 @@ export type TaskType =
   | "upgrade";
 // Generated from template.schema.json
 export interface ICommand {
-  type: "command" | "script" | "template";
   name: string;
-  execute: string;
+  command?: string;
+  script?: string;
+  template?: string;
   description?: string;
   execute_on?: "proxmox" | "lxc";
 }
 
 export interface IProxmoxExecuteMessage {
   command: string;
-  commandtext: string;
+  //commandtext: string;
   stderr: string;
   result: string | null;
   exitCode: number;
   execute_on?: "proxmox" | "lxc";
-  error?: Error;
+  error?: IJsonError;
   index?: number;
 }
 
-export type ParameterType = 'string' | 'number' | 'boolean' | 'enum';
+export type ParameterType = "string" | "number" | "boolean" | "enum";
 
 export interface IParameter {
   name: string;

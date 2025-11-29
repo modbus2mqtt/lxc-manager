@@ -49,24 +49,34 @@
     "commands": {
       "type": "array",
       "minItems": 1,
-      "items": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "enum": ["command", "script", "template"],
-            "default": "command"
-          },
-          "name": { "type": "string", "maxLength": 20 },
-          "execute": { "type": "string" },
-          "description": { "type": "string" }
-        },
-        "required": ["type", "execute"]
-      }
+      "items": { "$ref": "#/$defs/command" }
     }
   },
   "if": {
     "properties": { "type": { "enum": ["command", "script", "template"] } }
   },
   "then": { "properties": { "enumValues": { "type": "string" } } },
-  "required": ["commands", "execute_on", "name"]
+  "required": ["commands", "execute_on", "name"],
+  "$defs": {
+    "command": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 30 },
+        "description": { "type": "string" },
+        "command": { "type": "string" },
+        "script": { "type": "string" },
+        "schema": { "type": "string" },
+        "template": { "type": "string" }
+      },
+      "oneOf": [
+        { "required": ["command"] },
+        { "required": ["script"] },
+        { "required": ["schema"] },
+        { "required": ["template"] }
+      ],
+      "errorMessage": {
+        "oneOf": "Exactly one of 'command', 'script' or 'schema' must be present."
+      }
+    }
+  }
 }

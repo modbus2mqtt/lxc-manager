@@ -8,9 +8,8 @@
     ],
     "commands": [
             {
-                "type": "script",
                 "name": "Write VM IDs JSON",
-                "execute": "write-vmids-json.sh"
+                "script": "write-vmids-json.sh"
             }
     ]
 }

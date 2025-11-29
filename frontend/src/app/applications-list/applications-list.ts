@@ -6,6 +6,9 @@ import { CommonModule } from '@angular/common';
 import { ProxmoxConfigurationService } from '../proxmox-configuration.service';
 import { IApplicationWeb } from '../../shared/types.mjs';
 
+interface IApplicationWebIntern extends IApplicationWeb{
+  showErrors?: boolean;
+}
 @Component({
   selector: 'app-applications-list',
   standalone: true,
@@ -13,11 +16,11 @@ import { IApplicationWeb } from '../../shared/types.mjs';
   templateUrl: './applications-list.html',
   styleUrl: './applications-list.scss',
 })
+
 export class ApplicationsList implements OnInit {
-  applications: IApplicationWeb[] = [];
+  applications: IApplicationWebIntern[] = [];
   loading = true;
   error?: string;
-
   private proxmoxService = inject(ProxmoxConfigurationService);
   private dialog = inject(MatDialog);
 
@@ -30,7 +33,7 @@ export class ApplicationsList implements OnInit {
   ngOnInit(): void {
     this.proxmoxService.getApplications().subscribe({
       next: (apps) => {
-        this.applications = apps;
+        this.applications = apps.map((app) => ({ ...app, showErrors: false }));
         this.loading = false;
       },
       error: () => {

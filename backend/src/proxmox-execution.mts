@@ -1,9 +1,14 @@
 import { EventEmitter } from "events";
-import { ICommand, IProxmoxExecuteMessage, ISsh } from "@src/types.mjs";
+import {
+  ICommand,
+  IJsonError,
+  IProxmoxExecuteMessage,
+  ISsh,
+} from "@src/types.mjs";
 import path from "path";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { JsonValidator } from "./jsonvalidator.mjs";
+import { JsonError, JsonValidator } from "./jsonvalidator.mjs";
 export interface IProxmoxRunResult {
   lastSuccessIndex: number;
 }
@@ -16,7 +21,7 @@ export interface IOutput {
   default?: string;
 }
 export interface IRestartInfo {
-  vm_id: string | number;
+  vm_id?: string | number | undefined;
   lastSuccessfull: number;
   inputs: { name: string; value: string | number | boolean }[];
   outputs: { name: string; value: string | number | boolean }[];
@@ -111,7 +116,7 @@ export class ProxmoxExecution extends EventEmitter {
         "-q", // Suppress SSH diagnostic output
         "-p",
         String(port),
-        `${host}`
+        `${host}`,
       ];
     if (remoteCommand) {
       sshArgs = sshArgs.concat(remoteCommand);
@@ -151,29 +156,12 @@ export class ProxmoxExecution extends EventEmitter {
           msg.result = "ERROR";
           msg.index = index;
           this.emit("message", msg);
-          throw new Error(
+          throw new JsonError(
             `Command "${tmplCommand.name}" failed with exit code ${exitCode}: ${stderr}`,
           );
         }
       }
-      if( tmplCommand.type === "command" ) {
-        // For 'command' type, we do not expect JSON output
-        msg.command = tmplCommand.name;
-        msg.result = stdout;
-        msg.exitCode = exitCode;
-        if (exitCode === 0) {
-          msg.index = index++;
-          this.emit("message", msg);
-          return msg;
-        } else {
-          msg.index = index;
-          this.emit("message", msg);
-          throw new Error(
-            `Command "${tmplCommand.name}" failed with exit code ${exitCode}: ${stderr}`,
-          );
-        }
-      }
-      else
+
       try {
         const outputsJson = this.validator.serializeJsonWithSchema<
           IOutput[] | IOutput
@@ -196,11 +184,11 @@ export class ProxmoxExecution extends EventEmitter {
       } catch (e) {
         msg.index = index;
         msg.commandtext = stdout;
-        throw e
+        throw e;
       }
     } catch (e) {
       msg.index = index;
-      msg.error = e as Error;
+      msg.error = e as IJsonError;
       msg.exitCode = -1;
       this.emit("message", msg);
       throw e;
@@ -270,12 +258,12 @@ export class ProxmoxExecution extends EventEmitter {
       if (!cmd || typeof cmd !== "object") continue;
       let execStr = "";
       try {
-        if (cmd.type === "script" && cmd.execute) {
+        if (cmd.script !== undefined) {
           // Read script file, replace variables, then execute
-          const scriptContent = fs.readFileSync(cmd.execute, "utf-8");
+          const scriptContent = fs.readFileSync(cmd.script, "utf-8");
           execStr = this.replaceVars(scriptContent);
-        } else if (cmd.type === "command" && cmd.execute) {
-          execStr = this.replaceVars(cmd.execute);
+        } else if (cmd.command !== undefined) {
+          execStr = this.replaceVars(cmd.command);
         } else {
           continue; // skip unknown command type
         }
@@ -325,22 +313,24 @@ export class ProxmoxExecution extends EventEmitter {
         }
 
         const vm_id = this.outputs.get("vm_id");
-        if (vm_id !== undefined) {
-          rcRestartInfo = {
-            vm_id: Number.parseInt(vm_id as string, 10),
-            lastSuccessfull: i,
-            inputs: Object.entries(this.inputs).map(([name, value]) => ({
-              name,
-              value,
-            })),
-            outputs: Array.from(this.outputs.entries()).map(
-              ([name, value]) => ({ name, value }),
-            ),
-            defaults: Array.from(this.defaults.entries()).map(
-              ([name, value]) => ({ name, value }),
-            ),
-          };
-        }
+        rcRestartInfo = {
+          vm_id:
+            vm_id !== undefined
+              ? Number.parseInt(vm_id as string, 10)
+              : undefined,
+          lastSuccessfull: i,
+          inputs: Object.entries(this.inputs).map(([name, value]) => ({
+            name,
+            value,
+          })),
+          outputs: Array.from(this.outputs.entries()).map(([name, value]) => ({
+            name,
+            value,
+          })),
+          defaults: Array.from(this.defaults.entries()).map(
+            ([name, value]) => ({ name, value }),
+          ),
+        };
       } catch (e) {
         this.emit("message", {
           stderr: (e as any).message,

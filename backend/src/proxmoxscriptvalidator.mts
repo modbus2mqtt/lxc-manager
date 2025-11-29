@@ -1,7 +1,7 @@
-import { ICommand, IParameter } from "@src/types.mjs";
-import { IJsonErrorDetails } from "@src/jsonvalidator.mjs";
+import { ICommand, IJsonError, IParameter } from "@src/types.mjs";
 import fs from "fs";
 import path from "path";
+import { JsonError } from "./jsonvalidator.mjs";
 
 export class ProxmoxScriptValidator {
   /**
@@ -34,18 +34,26 @@ export class ProxmoxScriptValidator {
   validateScript(
     cmd: ICommand,
     application: string,
-    errors: IJsonErrorDetails[],
+    errors: IJsonError[],
     parameters: IParameter[],
     resolvedParams: Set<string>,
     requestedIn?: string,
     parentTemplate?: string,
     scriptPathes?: string[],
   ) {
-    const scriptPath = this.findInPathes(scriptPathes || [], cmd.execute);
+    if(cmd.script === undefined) {
+      errors.push(
+        new JsonError(
+          `Script command missing 'script' property (requested in: ${requestedIn ?? "unknown"}${parentTemplate ? ", parent template: " + parentTemplate : ""})`,
+        ),
+      );
+      return;
+    }
+    const scriptPath = this.findInPathes(scriptPathes || [], cmd.script);
     if (!scriptPath) {
       errors.push(
-        new Error(
-          `Script file not found: ${cmd.execute} (searched in: applications/${application}/scripts and shared/scripts, requested in: ${requestedIn ?? "unknown"}${parentTemplate ? ", parent template: " + parentTemplate : ""})`,
+        new JsonError(
+          `Script file not found: ${cmd.script} (searched in: applications/${application}/scripts and shared/scripts, requested in: ${requestedIn ?? "unknown"}${parentTemplate ? ", parent template: " + parentTemplate : ""})`,
         ),
       );
       return;
@@ -57,14 +65,14 @@ export class ProxmoxScriptValidator {
       for (const v of vars) {
         if (!parameters.some((p) => p.name === v) && !resolvedParams.has(v)) {
           errors.push(
-            new Error(
-              `Script ${cmd.execute} uses variable '{{ ${v} }}' but no such parameter is defined (requested in: ${requestedIn ?? "unknown"}${parentTemplate ? ", parent template: " + parentTemplate : ""})`,
+            new JsonError(
+              `Script ${cmd.script} uses variable '{{ ${v} }}' but no such parameter is defined (requested in: ${requestedIn ?? "unknown"}${parentTemplate ? ", parent template: " + parentTemplate : ""})`,
             ),
           );
         }
       }
     } catch (e) {
-      errors.push(new Error(`Failed to read script ${cmd.execute}: ${e}`));
+      errors.push(new JsonError(`Failed to read script ${cmd.script}: ${e}`));
     }
   }
 
@@ -73,18 +81,18 @@ export class ProxmoxScriptValidator {
    */
   validateCommand(
     cmd: ICommand,
-    errors: IJsonErrorDetails[],
+    errors: IJsonError[],
     parameters: IParameter[],
     resolvedParams: Set<string>,
     requestedIn?: string,
     parentTemplate?: string,
   ) {
-    if (cmd.execute) {
-      const vars = this.extractTemplateVariables(cmd.execute);
+    if (cmd.command) {
+      const vars = this.extractTemplateVariables(cmd.command);
       for (const v of vars) {
         if (!parameters.some((p) => p.name === v) && !resolvedParams.has(v)) {
           errors.push(
-            new Error(
+            new JsonError(
               `Command uses variable '{{ ${v} }}' but no such parameter is defined (requested in: ${requestedIn ?? "unknown"}${parentTemplate ? ", parent template: " + parentTemplate : ""})`,
             ),
           );

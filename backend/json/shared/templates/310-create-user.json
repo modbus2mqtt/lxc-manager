@@ -1,25 +1,38 @@
 {
+  "execute_on": "proxmox",
   "name": "310-create-user",
   "description": "Create a user inside the LXC container with specified username, uid, gid, and optional mountpoint write check. Calls create-user.sh with template variables.",
-  "script": "shared/scripts/create-user.sh",
-  "parameters": {
-    "username": {
+  "commands": [
+    {
+      "script": "create-user.sh",
+      "description": "Create a user inside the LXC container with specified username, uid, gid, and optional mountpoint write check. Calls create-user.sh with template variables."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "username",
       "type": "string",
-      "description": "The username to create. Must not be empty."
+      "description": "The username to create inside the LXC container.",
+      "required": true
     },
-    "uid": {
+    {
+      "name": "uid",
       "type": "string",
-      "description": "The UID for the user. Must not be empty."
+      "description": "The UID for the user",
+      "required": true
     },
-    "gid": {
+    {
+      "name": "gid",
       "type": "string",
-      "description": "The GID for the user. Must not be empty."
+      "description": "The GID for the user",
+      "required": true
     },
-    "mountpoint": {
+    {
+      "name": "mountpoint",
       "type": "string",
       "description": "Optional: The mountpoint to check for write access. Can be empty if not needed."
     }
-  },
+  ],
   "required": ["username", "uid", "gid"],
   "notes": "All parameters except mountpoint must be set and not empty. The script is idempotent and outputs errors to stderr."
 }

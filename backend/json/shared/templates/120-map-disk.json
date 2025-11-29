@@ -43,8 +43,7 @@
   ],
   "commands": [
     {
-      "type": "script",
-      "execute": "map-disk.sh",
+      "script": "map-disk.sh",
       "description": "Executes the script to map the disk by UUID and set up the bind mount in the container."
     }
   ]

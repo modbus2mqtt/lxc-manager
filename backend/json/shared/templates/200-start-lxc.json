@@ -13,8 +13,7 @@
   "commands": [
     {
       "type": "command",
-      "name": "Start LXC Container",
-      "execute": "pct start {{ vm_id }}"
+      "command": "pct start {{ vm_id }} 1>&2"
     }
   ]
 }

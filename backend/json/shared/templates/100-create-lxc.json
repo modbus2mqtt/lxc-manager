@@ -47,9 +47,7 @@
   "outputs": ["vm_id"],
   "commands": [
     {
-      "type": "script",
-      "name": "Create LXC Container",
-      "execute": "create-lxc-container.sh"
+      "script": "create-lxc-container.sh"
     }
   ]
 }

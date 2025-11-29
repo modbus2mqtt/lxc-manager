@@ -23,16 +23,35 @@
 					</div>
 
 				</div>
-				@if (app.errors) {
-							<div class="error-list">
-								<span class="error-x">&#10006;</span>
-								<ul>
-									@for (err of app.errors; track err) {
-										<li>{{ err }}</li>
+								@if (app.errors) {
+									<button type="button" class="show-errors-btn" (click)="app.showErrors = !app.showErrors">
+										<span class="error-x">&#10006;</span>
+										Show errors
+									</button>
+									@if (app.showErrors) {
+										<div class="error-list-overlay">
+											<ul class="error-list-ul">
+												<button type="button" class="close-errors-btn" (click)="app.showErrors = false" aria-label="Close error list">&times;</button>
+												@for (err of app.errors; track err) {
+													<ng-container *ngTemplateOutlet="recursiveError; context: { $implicit: err }"></ng-container>
+												}
+											</ul>
+										</div>
 									}
-								</ul>
-							</div>
-						}
+								}
+
+								<ng-template #recursiveError let-err>
+									<li>
+										{{ err.message }}
+										@if (err.details && err.details.length) {
+											<ul>
+												@for (childErr of err.details; track childErr) {
+													<ng-container *ngTemplateOutlet="recursiveError; context: { $implicit: childErr }"></ng-container>
+												}
+											</ul>
+										}
+									</li>
+								</ng-template>
 				<!-- Description now in header -->
 				<div class="card-actions">
 					<button type="button" (click)="openProxmoxConfigDialog(app)" [disabled]="app.errors">Configure</button>

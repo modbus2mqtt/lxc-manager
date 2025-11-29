@@ -1,5 +1,8 @@
-import { ProxmoxConfigurationError } from "@src/proxmoxconfiguration.mjs";
-import { IApplication, IConfiguredPathes } from "@src/proxmoxconftypes.mjs";
+import {
+  IApplication,
+  IConfiguredPathes,
+  ProxmoxConfigurationError,
+} from "@src/proxmoxconftypes.mjs";
 import path from "path";
 import { JsonValidator } from "./jsonvalidator.mjs";
 import fs from "fs";

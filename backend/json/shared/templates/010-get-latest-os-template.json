@@ -14,9 +14,8 @@
   "outputs": ["template_path"],
   "commands": [
     {
-      "type": "script",
       "name": "Latest OS Template",
-      "execute": "get-latest-os-template.sh"
+      "script": "get-latest-os-template.sh"
     }
   ]
 }

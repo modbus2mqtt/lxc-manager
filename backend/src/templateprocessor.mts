@@ -1,5 +1,5 @@
 import path from "path";
-import { IJsonErrorDetails, JsonValidator } from "@src/jsonvalidator.mjs";
+import { JsonError, JsonValidator } from "@src/jsonvalidator.mjs";
 import {
   IReadApplicationOptions,
   ProxmoxLoadApplicationError,
@@ -8,7 +8,13 @@ import {
   IConfiguredPathes,
   ProxmoxConfigurationError,
 } from "@src/proxmoxconftypes.mjs";
-import { TaskType, ITemplate, ICommand, IParameter } from "@src/types.mjs";
+import {
+  TaskType,
+  ITemplate,
+  ICommand,
+  IParameter,
+  IJsonError,
+} from "@src/types.mjs";
 import { ApplicationLoader } from "@src/proxmoxapploader.mjs";
 import fs from "fs";
 import { ProxmoxScriptValidator } from "@src/proxmoxscriptvalidator.mjs";
@@ -20,7 +26,7 @@ interface ProxmoxProcessTemplateOpts {
   parameters: IParameter[];
   commands: ICommand[];
   visitedTemplates?: Set<string>;
-  errors?: IJsonErrorDetails[];
+  errors?: IJsonError[];
   requestedIn?: string | undefined;
   parentTemplate?: string | undefined;
   templatePathes: string[];
@@ -56,12 +62,12 @@ export class TemplateProcessor {
     const appEntry = readOpts.taskTemplates.find((t) => t.task === task);
     if (!appEntry) {
       throw new ProxmoxLoadApplicationError(applicationName, task, [
-        new Error(`Task ${task} not found in application.json`),
+        new JsonError(`Task ${task} not found in application.json`),
       ]);
     }
     if (!readOpts.application) {
       throw new ProxmoxLoadApplicationError(applicationName, task, [
-        new Error(`Application data not found for ${applicationName}`),
+        new JsonError(`Application data not found for ${applicationName}`),
       ]);
     }
     let application = readOpts.application;
@@ -84,7 +90,7 @@ export class TemplateProcessor {
         icon: application?.icon,
         errors: [`Task ${task} not found in application.json`],
       };
-      const err = new Error(`Task ${task} not found in application.json`);
+      const err = new JsonError(`Task ${task} not found in application.json`);
       (err as any).application = appBase;
       throw err;
     }
@@ -100,7 +106,7 @@ export class TemplateProcessor {
     templatePathes.push(path.join(this.pathes.jsonPath, "shared", "templates"));
     scriptPathes.push(path.join(this.pathes.jsonPath, "shared", "scripts"));
     // 5. Process each template
-    const errors: IJsonErrorDetails[] = [];
+    const errors: IJsonError[] = [];
     let outParameters: IParameter[] = [];
     let outCommands: ICommand[] = [];
     for (const tmpl of templates) {
@@ -143,7 +149,9 @@ export class TemplateProcessor {
     // Prevent endless recursion
     if (opts.visitedTemplates.has(opts.template)) {
       opts.errors.push(
-        new Error(`Endless recursion detected for template: ${opts.template}`),
+        new JsonError(
+          `Endless recursion detected for template: ${opts.template}`,
+        ),
       );
       return;
     }
@@ -151,7 +159,7 @@ export class TemplateProcessor {
     const tmplPath = this.findInPathes(opts.templatePathes, opts.template);
     if (!tmplPath) {
       opts.errors.push(
-        new Error(
+        new JsonError(
           `Template file not found: ${opts.template} (searched in: ${opts.templatePathes.join(", ")}` +
             ', requested in: ${opts.requestedIn ?? "unknown"}${opts.parentTemplate ? ", parent template: " + opts.parentTemplate : ""})',
         ),
@@ -200,18 +208,14 @@ export class TemplateProcessor {
         if (cmd.name === undefined || (cmd.name.trim() === "" && tmplData)) {
           cmd.name = `${tmplData.name || "unnamed-template"}`;
         }
-        switch (cmd.type) {
-          case "template":
-            if (cmd.execute) {
-              this.#processTemplate({
+        if( cmd.template !== undefined) {
+          this.#processTemplate({
                 ...opts,
-                template: cmd.execute,
+                template: cmd.template,
                 parentTemplate: opts.template,
               });
-            }
-            break;
-          case "script": {
-            const scriptValidator = new ProxmoxScriptValidator();
+        }else if (cmd.script !== undefined) {
+          const scriptValidator = new ProxmoxScriptValidator();
             scriptValidator.validateScript(
               cmd,
               opts.application,
@@ -225,17 +229,15 @@ export class TemplateProcessor {
             // Set execute to the full script path (if found)
             const scriptPath = this.findInPathes(
               opts.scriptPathes,
-              cmd.execute,
+              cmd.script,
             );
             opts.commands.push({
               ...cmd,
-              execute: scriptPath || cmd.execute,
+              script: scriptPath || cmd.script,
               execute_on: tmplData.execute_on,
             });
-            break;
-          }
-          case "command":
-            const scriptValidator = new ProxmoxScriptValidator();
+        }else if (cmd.command !== undefined) {
+          const scriptValidator = new ProxmoxScriptValidator();
             scriptValidator.validateCommand(
               cmd,
               opts.errors,
@@ -245,8 +247,7 @@ export class TemplateProcessor {
               opts.parentTemplate,
             );
             opts.commands.push({ ...cmd, execute_on: tmplData.execute_on });
-            break;
-          default:
+        } else { 
             opts.commands.push({ ...cmd, execute_on: tmplData.execute_on });
             break;
         }
