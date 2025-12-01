@@ -1,9 +1,9 @@
 
 import { Component, inject, OnInit } from '@angular/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { ProxmoxConfigurationDialog } from '../proxmox-configuration-dialog/proxmox-configuration-dialog';
+import { VeConfigurationDialog } from '../ve-configuration-dialog/ve-configuration-dialog';
 import { CommonModule } from '@angular/common';
-import { ProxmoxConfigurationService } from '../proxmox-configuration.service';
+import { ProxmoxConfigurationService } from '../ve-configuration.service';
 import { IApplicationWeb } from '../../shared/types.mjs';
 
 interface IApplicationWebIntern extends IApplicationWeb{
@@ -25,7 +25,7 @@ export class ApplicationsList implements OnInit {
   private dialog = inject(MatDialog);
 
   openProxmoxConfigDialog(app: IApplicationWeb) {
-    this.dialog.open(ProxmoxConfigurationDialog, {
+    this.dialog.open(VeConfigurationDialog, {
       data: { app },
     });
   }

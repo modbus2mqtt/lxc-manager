@@ -10,26 +10,26 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { IApplicationWeb, IParameter } from '../../shared/types.mjs';
-import { ProxmoxConfigurationService } from '../proxmox-configuration.service';
+import { ProxmoxConfigurationService } from '../ve-configuration.service';
 
 @Component({
-  selector: 'app-proxmox-configuration-dialog',
+  selector: 'app-ve-configuration-dialog',
   standalone: true,
   imports: [
     CommonModule, MatDialogModule, FormsModule, ReactiveFormsModule,
     MatFormFieldModule, MatInputModule, MatSelectModule, MatTooltipModule, MatSlideToggleModule
   ],
-  templateUrl: './proxmox-configuration-dialog.html',
-  styleUrl: './proxmox-configuration-dialog.scss',
+  templateUrl: './ve-configuration-dialog.html',
+  styleUrl: './ve-configuration-dialog.scss',
 })
-export class ProxmoxConfigurationDialog implements OnInit {
+export class VeConfigurationDialog implements OnInit {
   form: FormGroup;
   unresolvedParameters: IParameter[] = [];
   groupedParameters: Record<string, IParameter[]> = {};
   loading = signal(true);
   error = signal<string | null>(null);
   private configService: ProxmoxConfigurationService = inject(ProxmoxConfigurationService);
-  public dialogRef: MatDialogRef<ProxmoxConfigurationDialog> = inject(MatDialogRef<ProxmoxConfigurationDialog>);
+  public dialogRef: MatDialogRef<VeConfigurationDialog> = inject(MatDialogRef<VeConfigurationDialog>);
   private fb: FormBuilder = inject(FormBuilder);
   public data = inject(MAT_DIALOG_DATA) as { app: IApplicationWeb };
   constructor(  ) {

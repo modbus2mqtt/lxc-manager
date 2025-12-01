@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ProxmoxConfigurationService } from '../proxmox-configuration.service';
+import { ProxmoxConfigurationService } from '../ve-configuration.service';
 import { ISsh } from '../../shared/types.mjs';
 
 @Component({

@@ -10,7 +10,7 @@ import { IApplicationWeb, IParameter } from '../shared/types.mjs';
 
 
 
-export interface ProxmoxConfigParam { name: string; value: string | number | boolean }
+export interface VeConfigurationParam { name: string; value: string | number | boolean }
 
 
 @Injectable({
@@ -62,7 +62,7 @@ export class ProxmoxConfigurationService {
     );
   }
 
-  postProxmoxConfiguration(application: string, task: string, params: ProxmoxConfigParam[]): Observable<{ success: boolean }> {
+  postProxmoxConfiguration(application: string, task: string, params: VeConfigurationParam[]): Observable<{ success: boolean }> {
     const url = `/api/proxmox-configuration/${encodeURIComponent(application)}/${encodeURIComponent(task)}`;
     return this.http.post<{ success: boolean }>(url, params).pipe(
       catchError(ProxmoxConfigurationService.handleError)
