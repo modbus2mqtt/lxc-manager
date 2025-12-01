@@ -48,4 +48,4 @@ if [ $RC -ne 0 ]; then
   exit $RC
 fi
 echo "LXC container $VMID ({{ hostname }}) created." >&2
-echo '{ "name": "vm_id", "value": "'$VMID'" }'
+echo '{ "id": "vm_id", "value": "'$VMID'" }'

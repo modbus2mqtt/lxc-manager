@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { ProxmoxConfiguration } from "./proxmoxconfiguration.mjs";
-import { IRestartInfo, ProxmoxExecution } from "./proxmox-execution.mjs";
+import { VeConfiguration } from "./ve-configuration.mjs";
+import { IRestartInfo, VeExecution } from "./ve-execution.mjs";
 // Make sure the types file exists, or update the path if necessary
 // If your types are in a TypeScript file, use './types' instead of './types.js'
 import type { TaskType } from "./types.mjs";
@@ -51,7 +51,7 @@ async function main() {
     JsonError.baseDir = projectRoot;
 
     // Hole alle Apps (Name -> Pfad)
-    const allApps = ProxmoxConfiguration.getAllApps(jsonPath, localPath);
+    const allApps = VeConfiguration.getAllApps(jsonPath, localPath);
     const appPath = allApps.get(application);
     if (!appPath) {
       console.error(
@@ -109,7 +109,7 @@ async function main() {
         defaults.set(param.name, param.default);
       }
     });
-    const exec = new ProxmoxExecution(loaded.commands, params, defaults);
+    const exec = new VeExecution(loaded.commands, params, defaults);
     exec.on("message", (msg) => {
       console.error(`[${msg.command}] ${msg.stderr}`);
       if (msg.exitCode !== 0) {

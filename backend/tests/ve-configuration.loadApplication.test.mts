@@ -1,22 +1,22 @@
 import * as path from "path";
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import {
-  ProxmoxConfiguration,
-} from "@src/proxmoxconfiguration.mjs";
-import { ProxmoxTestHelper } from "@tests/proxmoxTestHelper.mjs";
+  VeConfiguration,
+} from "@src/ve-configuration.mjs";
+import { ProxmoxTestHelper } from "@tests/ve-test-helper.mjs";
 import { TemplateProcessor } from "@src/templateprocessor.mjs";
-import { ProxmoxConfigurationError } from "@src/proxmoxconftypes.mjs";
+import { ProxmoxConfigurationError } from "@src/backend-types.mjs";
 
 declare module "@tests/proxmoxTestHelper.mjs" {
   interface ProxmoxTestHelper {
-    createProxmoxConfiguration(): ProxmoxConfiguration;
+    createProxmoxConfiguration(): VeConfiguration;
   }
 }
 ProxmoxTestHelper.prototype.createProxmoxConfiguration = function () {
   const schemaPath = path.join(__dirname, "../schemas");
   const jsonPath = this.jsonDir;
   const localPath = path.join(__dirname, "../local/json");
-  return new ProxmoxConfiguration(schemaPath, jsonPath, localPath);
+  return new VeConfiguration(schemaPath, jsonPath, localPath);
 };
 
 describe("ProxmoxConfiguration.loadApplication", () => {

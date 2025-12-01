@@ -14,11 +14,11 @@
     "outputObject": {
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
+        "id": { "type": "string" },
         "value": { "type": ["string", "boolean", "number"] },
         "default": { "type": ["string", "boolean", "number"] }
       },
-      "required": ["name"],
+      "required": ["id"],
       "additionalProperties": false
     }
   }

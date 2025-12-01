@@ -2,7 +2,7 @@ import {
   IApplication,
   IConfiguredPathes,
   ProxmoxConfigurationError,
-} from "@src/proxmoxconftypes.mjs";
+} from "@src/backend-types.mjs";
 import path from "path";
 import { JsonValidator } from "./jsonvalidator.mjs";
 import fs from "fs";

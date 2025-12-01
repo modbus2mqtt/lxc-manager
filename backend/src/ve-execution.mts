@@ -30,7 +30,7 @@ export interface IRestartInfo {
 /**
  * ProxmoxExecution: Executes a list of ICommand objects with variable substitution and remote/container execution.
  */
-export class ProxmoxExecution extends EventEmitter {
+export class VeExecution extends EventEmitter {
   private ssh: ISsh | null = null;
   private commands!: ICommand[];
   private inputs!: Record<string, string | number | boolean>;
@@ -48,7 +48,7 @@ export class ProxmoxExecution extends EventEmitter {
       this.inputs[inp.name] = inp.value;
     }
     // Load SSH config on instance creation
-    this.ssh = ProxmoxExecution.getSshParameters();
+    this.ssh = VeExecution.getSshParameters();
     // Nutze Singleton-Factory für JsonValidator
     this.validator = JsonValidator.getInstance(
       path.join(process.cwd(), "schemas"),

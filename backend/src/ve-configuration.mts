@@ -4,7 +4,7 @@ import { IApplicationWeb, IJsonError, TaskType } from "@src/types.mjs";
 import {
   IConfiguredPathes,
   ProxmoxConfigurationError,
-} from "@src/proxmoxconftypes.mjs";
+} from "@src/backend-types.mjs";
 import { TemplateProcessor } from "@src/templateprocessor.mjs";
 import { JsonError } from "./jsonvalidator.mjs";
 
@@ -48,7 +48,7 @@ export class ProxmoxLoadApplicationError extends ProxmoxConfigurationError {
 // Interface generated from template.schema.json
 export interface ITemplateSchema {}
 
-export class ProxmoxConfiguration implements IConfiguredPathes {
+export class VeConfiguration implements IConfiguredPathes {
   /**
    * Liest die application.json für eine Anwendung, unterstützt Vererbung und Template-Listen-Manipulation.
    * @param application Name der Anwendung (ggf. mit json: Präfix)
@@ -81,7 +81,7 @@ export class ProxmoxConfiguration implements IConfiguredPathes {
 
   listApplications(): IApplicationWeb[] {
     const applications: IApplicationWeb[] = [];
-    for (const [appName, appDir] of ProxmoxConfiguration.getAllApps(
+    for (const [appName, appDir] of VeConfiguration.getAllApps(
       this.jsonPath,
       this.localPath,
     )) {

@@ -12,4 +12,4 @@ packagerurl=$(curl -sL https://api.github.com/repos/$owner/$repo/releases/latest
     }
   ')
 packagerpubkeyurl="https://github.com/$owner/$repo/releases/latest/download/packager.rsa.pub"
-echo '[{ "name": "packageurl", "value": "'$packagerurl'" }, { "name": "packagerpubkeyurl", "value": "'$packagerpubkeyurl'" }]'
+echo '[{ "id": "packageurl", "value": "'$packagerurl'" }, { "id": "packagerpubkeyurl", "value": "'$packagerpubkeyurl'" }]'

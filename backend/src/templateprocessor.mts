@@ -3,11 +3,11 @@ import { JsonError, JsonValidator } from "@src/jsonvalidator.mjs";
 import {
   IReadApplicationOptions,
   ProxmoxLoadApplicationError,
-} from "@src/proxmoxconfiguration.mjs";
+} from "@src/ve-configuration.mjs";
 import {
   IConfiguredPathes,
   ProxmoxConfigurationError,
-} from "@src/proxmoxconftypes.mjs";
+} from "@src/backend-types.mjs";
 import {
   TaskType,
   ITemplate,
@@ -15,9 +15,9 @@ import {
   IParameter,
   IJsonError,
 } from "@src/types.mjs";
-import { ApplicationLoader } from "@src/proxmoxapploader.mjs";
+import { ApplicationLoader } from "@src/apploader.mjs";
 import fs from "fs";
-import { ProxmoxScriptValidator } from "@src/proxmoxscriptvalidator.mjs";
+import { ScriptValidator } from "@src/scriptvalidator.mjs";
 
 interface ProxmoxProcessTemplateOpts {
   application: string;
@@ -192,7 +192,7 @@ export class TemplateProcessor {
     // Add all parameters (no duplicates)
     if (Array.isArray(tmplData.parameters)) {
       for (const param of tmplData.parameters) {
-        if (!opts.parameters.some((p) => p.name === param.name)) {
+        if (!opts.parameters.some((p) => p.id === param.id)) {
           if (tmplData.name) param.template = tmplData.name;
           opts.parameters.push(param);
         }
@@ -203,8 +203,8 @@ export class TemplateProcessor {
     if (Array.isArray(tmplData.commands)) {
       // Add dummy parameters for all resolvedParams not already in parameters
       for (const resolved of opts.resolvedParams) {
-        if (!opts.parameters.some((p) => p.name === resolved)) {
-          opts.parameters.push({ name: resolved, type: "string" });
+        if (!opts.parameters.some((p) => p.id === resolved)) {
+          opts.parameters.push({ id: resolved, name: resolved, type: "string" });
         }
       }
       for (const cmd of tmplData.commands) {
@@ -218,7 +218,7 @@ export class TemplateProcessor {
                 parentTemplate: opts.template,
               });
         }else if (cmd.script !== undefined) {
-          const scriptValidator = new ProxmoxScriptValidator();
+          const scriptValidator = new ScriptValidator();
             scriptValidator.validateScript(
               cmd,
               opts.application,
@@ -240,7 +240,7 @@ export class TemplateProcessor {
               execute_on: tmplData.execute_on,
             });
         }else if (cmd.command !== undefined) {
-          const scriptValidator = new ProxmoxScriptValidator();
+          const scriptValidator = new ScriptValidator();
             scriptValidator.validateCommand(
               cmd,
               opts.errors,
@@ -273,6 +273,6 @@ export class TemplateProcessor {
     parameters: IParameter[],
     resolvedParams: Set<string>,
   ): IParameter[] {
-    return parameters.filter((param) => !resolvedParams.has(param.name));
+    return parameters.filter((param) => !resolvedParams.has(param.id));
   }
 }

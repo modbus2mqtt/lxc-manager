@@ -21,4 +21,4 @@ else
 fi
 template_path=$(pveam list $STORAGE | awk -v T="$TEMPLATE" '$1 ~ T {print $1}')
 # Output the template path in JSON format
-echo '[{ "name": "template_path", "value": "'$template_path'"} ,{"name": "ostype", "value": "'$OSTYPE'" }]'
+echo '[{ "id": "template_path", "value": "'$template_path'"} ,{"id": "ostype", "value": "'$OSTYPE'" }]'

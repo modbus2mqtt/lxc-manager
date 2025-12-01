@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { JsonError } from "./jsonvalidator.mjs";
 
-export class ProxmoxScriptValidator {
+export class ScriptValidator {
   /**
    * Extracts all {{ var }} placeholders from a string.
    */
@@ -63,7 +63,7 @@ export class ProxmoxScriptValidator {
       const scriptContent = fs.readFileSync(scriptPath, "utf-8");
       const vars = this.extractTemplateVariables(scriptContent);
       for (const v of vars) {
-        if (!parameters.some((p) => p.name === v) && !resolvedParams.has(v)) {
+        if (!parameters.some((p) => p.id === v) && !resolvedParams.has(v)) {
           errors.push(
             new JsonError(
               `Script ${cmd.script} uses variable '{{ ${v} }}' but no such parameter is defined (requested in: ${requestedIn ?? "unknown"}${parentTemplate ? ", parent template: " + parentTemplate : ""})`,
@@ -90,7 +90,7 @@ export class ProxmoxScriptValidator {
     if (cmd.command) {
       const vars = this.extractTemplateVariables(cmd.command);
       for (const v of vars) {
-        if (!parameters.some((p) => p.name === v) && !resolvedParams.has(v)) {
+        if (!parameters.some((p) => p.id === v) && !resolvedParams.has(v)) {
           errors.push(
             new JsonError(
               `Command uses variable '{{ ${v} }}' but no such parameter is defined (requested in: ${requestedIn ?? "unknown"}${parentTemplate ? ", parent template: " + parentTemplate : ""})`,

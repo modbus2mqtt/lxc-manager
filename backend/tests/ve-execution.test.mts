@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { ProxmoxExecution } from "@src/proxmox-execution.mjs";
+import { VeExecution } from "@src/ve-execution.mjs";
 import { ICommand, ISsh } from "@src/types.mjs";
 import fs from "node:fs";
 import os from "node:os";
@@ -43,7 +43,7 @@ describe("ProxmoxExecution", () => {
       // None (should throw)
       // { expected: 'error', message: 'None set' },
     ];
-    class TestExec extends ProxmoxExecution {
+    class TestExec extends VeExecution {
       public callReplaceVars(str: string) {
         // @ts-expect-error: Accessing private method for test
         return this.replaceVars(str);
@@ -71,7 +71,7 @@ describe("ProxmoxExecution", () => {
     }
   });
   it("should use default value if no output or input value is set", () => {
-    class TestExec extends ProxmoxExecution {
+    class TestExec extends VeExecution {
       public testReplaceVars(str: string) {
         // @ts-expect-error: Accessing private method for test
         return this.replaceVars(str);
@@ -102,7 +102,7 @@ describe("ProxmoxExecution", () => {
   it("should read a script file, replace variables, and execute the replaced content", () => {
     const scriptPath = path.join(os.tmpdir(), "testscript.sh");
     fs.writeFileSync(scriptPath, "echo {{ myvar }}");
-    class TestExec extends ProxmoxExecution {
+    class TestExec extends VeExecution {
       public lastCommand = "";
       protected runOnProxmoxHost(
         command: string,
@@ -127,7 +127,7 @@ describe("ProxmoxExecution", () => {
     ];
     const inputs = [{ name: "myvar", value: "replacedValue" }];
     const exec = new TestExec(commands, inputs, new Map());
-    ProxmoxExecution.setSshParameters({ host: "localhost", port: 22 });
+    VeExecution.setSshParameters({ host: "localhost", port: 22 });
     exec.run();
     expect(exec.lastCommand).toBe("echo replacedValue");
     try {
@@ -137,7 +137,7 @@ describe("ProxmoxExecution", () => {
   });
 
   it("should replace variable in command with input value", () => {
-    class TestExec extends ProxmoxExecution {
+    class TestExec extends VeExecution {
       protected runOnProxmoxHost(
         command: string,
         tmplCommand: ICommand
@@ -161,7 +161,7 @@ describe("ProxmoxExecution", () => {
     ];
     const inputs = [{ name: "somevariable", value: "replaced" }];
     new TestExec(commands, inputs, new Map());
-    ProxmoxExecution.setSshParameters({ host: "localhost", port: 22 });
+    VeExecution.setSshParameters({ host: "localhost", port: 22 });
     // run() only returns lastSuccessIndex, but we can intercept runOnProxmoxHost
     // or check outputs. Here we check if the replaced value arrives:
     let resultValue = "";
@@ -181,14 +181,14 @@ describe("ProxmoxExecution", () => {
       }
     }
     const exec2 = new CaptureExec(commands, inputs, new Map());
-    ProxmoxExecution.setSshParameters({ host: "localhost", port: 22 });
+    VeExecution.setSshParameters({ host: "localhost", port: 22 });
     exec2.run();
     expect(resultValue).toBe("replaced");
   });
   const sshParams: ISsh = { host: "localhost", port: 22 };
 
   it("should parse JSON output and fill outputs", () => {
-    class TestExec extends ProxmoxExecution {
+    class TestExec extends VeExecution {
       protected runOnProxmoxHost(
         command: string,
         tmplCommand: ICommand
@@ -250,7 +250,7 @@ describe("ProxmoxExecution", () => {
       { name: "baz", value: 99 },
     ];
     const exec = new TestExec(commands, inputs, new Map());
-    ProxmoxExecution.setSshParameters(sshParams);
+    VeExecution.setSshParameters(sshParams);
     exec.run();
     expect(exec.outputs.get("foo")).toBe("baz");
     expect(exec.outputs.get("baz")).toBe(99);
@@ -258,7 +258,7 @@ describe("ProxmoxExecution", () => {
   });
 
   it("should replace variables from inputs and outputs", () => {
-    class TestExec extends ProxmoxExecution {
+    class TestExec extends VeExecution {
       protected runOnProxmoxHost(
         command: string,
         tmplCommand: ICommand
@@ -305,7 +305,7 @@ describe("ProxmoxExecution", () => {
     ];
     const inputs = [{ name: "foo", value: "inputFoo" }];
     const exec = new TestExec(commands, inputs, new Map());
-    ProxmoxExecution.setSshParameters(sshParams);
+    VeExecution.setSshParameters(sshParams);
     exec.run();
     expect(exec.outputs.get("foo")).toBe("baz99");
   });
@@ -365,7 +365,7 @@ describe("ProxmoxExecution", () => {
   // });
 
   it("should return lastSuccessIndex", () => {
-    class TestExec extends ProxmoxExecution {
+    class TestExec extends VeExecution {
       protected runOnProxmoxHost(
         command: string,
         tmplCommand: ICommand
@@ -398,7 +398,7 @@ describe("ProxmoxExecution", () => {
     ];
     const inputs = [{ name: "foo", value: "inputFoo" }];
     const exec = new TestExec(commands, inputs, new Map());
-    ProxmoxExecution.setSshParameters(sshParams);
+    VeExecution.setSshParameters(sshParams);
     const result = exec.run();
     expect(typeof result?.lastSuccessfull).toBe("number");
     expect(result?.lastSuccessfull).toBe(commands.length - 1);

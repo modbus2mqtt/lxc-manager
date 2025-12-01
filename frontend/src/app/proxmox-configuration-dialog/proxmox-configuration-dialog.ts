@@ -39,11 +39,11 @@ export class ProxmoxConfigurationDialog implements OnInit {
     return Object.keys(this.groupedParameters);
   }
   ngOnInit(): void {
-    // For demo: use 'installation' as default task, can be extended
+    // For demo purposes: use 'installation' as the default task, can be extended
     this.configService.getUnresolvedParameters(this.data.app.id, 'installation').subscribe({
       next: (res) => {
         this.unresolvedParameters = res.unresolvedParameters;
-        // Gruppiere nach template
+        // Group parameters by template
         this.groupedParameters = {};
         for (const param of this.unresolvedParameters) {
           const group = param.template || 'General';
@@ -51,7 +51,14 @@ export class ProxmoxConfigurationDialog implements OnInit {
           this.groupedParameters[group].push(param);
           const validators = param.required ? [Validators.required] : [];
           const defaultValue = param.default !== undefined ? param.default : '';
-          this.form.addControl(param.name, new FormControl(defaultValue, validators));
+          this.form.addControl(param.id, new FormControl(defaultValue, validators));
+        }
+        // Sort parameters in each group: required first, then optional
+        for (const group in this.groupedParameters) {
+          this.groupedParameters[group] = this.groupedParameters[group].slice().sort((a, b) => {
+            if (a.required === b.required) return 0;
+            return a.required ? -1 : 1;
+          });
         }
         this.loading.set(false);
       },
@@ -79,7 +86,7 @@ export class ProxmoxConfigurationDialog implements OnInit {
       next: () => {
         this.loading.set(false);
         this.dialogRef.close(this.form.value);
-        // Navigate to process-monitor after successful install
+        // Navigate to process monitor after successful installation
         this.configService['router'].navigate(['/monitor']);
       },
       error: () => {

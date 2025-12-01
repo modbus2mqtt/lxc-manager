@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { ProxmoxExecution } from "@src/proxmox-execution.mjs";
+import { VeExecution } from "@src/ve-execution.mjs";
 import { ICommand } from "@src/types.mjs";
 import { spawnSync } from "child_process";
 import fs from "fs";
@@ -26,7 +26,7 @@ describe("ProxmoxExecution shell quoting", () => {
       command: script,
       execute_on: "proxmox",
     };
-    const exec = new ProxmoxExecution([command], inputs, defaults);
+    const exec = new VeExecution([command], inputs, defaults);
     (exec as any).ssh = { host: "localhost", port: 22 };
     // runOnProxmoxHost als Mock: akzeptiert alle Parameter, führt aber nur das Kommando lokal aus
     (exec as any).runOnProxmoxHost = function (
@@ -75,7 +75,7 @@ describe("ProxmoxExecution shell quoting", () => {
       command: script,
       execute_on: "lxc",
     };
-    const exec = new ProxmoxExecution(
+    const exec = new VeExecution(
       [command],
       [{ name: "vm_id", value: "dummy" }],
       defaults,

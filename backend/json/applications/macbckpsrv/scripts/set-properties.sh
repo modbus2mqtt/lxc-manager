@@ -4,9 +4,9 @@
 
 cat <<EOF
 [
-  { "name": "username", "value": "backup", "default": "backup" },
-  { "name": "mountpoint", "value": "backup" },
-  { "name": "uid", "value": 2001 },
-  { "name": "gid", "value": 2001 }
+  { "id": "username", "value": "backup", "default": "backup" },
+  { "id": "mountpoint", "value": "backup" },
+  { "id": "uid", "value": 2001 },
+  { "id": "gid", "value": 2001 }
 ]
 EOF

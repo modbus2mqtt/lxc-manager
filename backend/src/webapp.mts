@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import express from "express";
-import { ProxmoxConfiguration } from "@src/proxmoxconfiguration.mjs";
+import { VeConfiguration } from "@src/ve-configuration.mjs";
 import { TaskType, ISsh, IProxmoxExecuteMessage } from "@src/types.mjs";
-import { ProxmoxExecution } from "@src/proxmox-execution.mjs";
+import { VeExecution } from "@src/ve-execution.mjs";
 import http from "http";
 import path from "path";
 import fs from "node:fs";
@@ -44,7 +44,7 @@ export class ProxmoxWebApp {
           );
 
           // 2. Load application (provides commands)
-          const config = new ProxmoxConfiguration(
+          const config = new VeConfiguration(
             schemaPath,
             jsonPath,
             localJsonPath,
@@ -64,7 +64,7 @@ export class ProxmoxWebApp {
             }
           });
           // 3. Start ProxmoxExecution
-          const exec = new ProxmoxExecution(commands, params, defaults);
+          const exec = new VeExecution(commands, params, defaults);
           exec.on("message", (msg: IProxmoxExecuteMessage) => {
             this.messages.push(msg);
           });
@@ -84,7 +84,7 @@ export class ProxmoxWebApp {
     // SSH config API
     this.app.get("/api/sshconfig", (req, res) => {
       try {
-        const ssh: ISsh | null = ProxmoxExecution.getSshParameters();
+        const ssh: ISsh | null = VeExecution.getSshParameters();
         if (ssh) {
           res.json(ssh);
           res.status(200);
@@ -114,7 +114,7 @@ export class ProxmoxWebApp {
         return;
       }
       try {
-        ProxmoxExecution.setSshParameters(ssh);
+        VeExecution.setSshParameters(ssh);
         res.json({ success: true }).status(200);
       } catch (err: any) {
         res.status(500).json({ error: err.message });
@@ -126,7 +126,7 @@ export class ProxmoxWebApp {
       (req, res) => {
         const { application, task } = req.params;
         try {
-          const config = new ProxmoxConfiguration(
+          const config = new VeConfiguration(
             schemaPath,
             jsonPath,
             localJsonPath,
@@ -136,10 +136,9 @@ export class ProxmoxWebApp {
             application,
             task as TaskType,
           );
+          const unresolvedParameters =  templateProcessor.getUnresolvedParameters(loaded.parameters, loaded.resolvedParams);
           res.json({
-            unresolvedParameters: loaded.parameters.filter(
-              (param) => !param.default,
-            ),
+            unresolvedParameters: unresolvedParameters,
           }).status(200);
         } catch (err: any) {
           res
@@ -151,7 +150,7 @@ export class ProxmoxWebApp {
 
     this.app.get("/api/applications", (req, res) => {
       try {
-        const config = new ProxmoxConfiguration(
+        const config = new VeConfiguration(
           schemaPath,
           jsonPath,
           localJsonPath,

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { ProxmoxConfiguration } from "../src/proxmoxconfiguration.mjs";
+import { VeConfiguration } from "../src/ve-configuration.mjs";
 import fs from "fs";
 import * as path from "path";
 import os from "node:os";
@@ -59,7 +59,7 @@ describe("ProxmoxConfiguration script path resolution", () => {
   });
 
   it("should resolve script path in commands", () => {
-    const config = new ProxmoxConfiguration(schemaPath, jsonPath, localPath);
+    const config = new VeConfiguration(schemaPath, jsonPath, localPath);
     const templateProcessor = new TemplateProcessor(config);
 
     const result = templateProcessor.loadApplication(appName, "installation");
