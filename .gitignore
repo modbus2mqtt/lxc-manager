@@ -1,0 +1,20 @@
+node_modules/
+.DS_Store
+*.log
+
+# Build outputs
+backend/dist/
+frontend/dist/
+
+# Test coverage
+coverage/
+
+# Editor configs (optional)
+.vscode/
+
+# Cypress/Playwright outputs
+cypress/
+playwright-report/
+test-results/
+#
+test-results/

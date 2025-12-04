@@ -7,7 +7,10 @@
   "scripts": {
     "build": "npm run build:backend --silent && npm run build:frontend --silent",
     "build:backend": "cd backend && npm run build",
-    "build:frontend": "cd frontend && npm run build"
+    "build:frontend": "cd frontend && npm run build",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:debug": "PWDEBUG=1 playwright test --headed"
   },
   "bin": {
     "lxc-manager-web": "bin/webapp"
@@ -21,5 +24,8 @@
   ,
   "lxcManager": {
     "frontendDir": "frontend/dist/webapp-angular/browser"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2"
   }
 }
