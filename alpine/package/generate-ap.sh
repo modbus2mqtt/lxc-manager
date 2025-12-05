@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -ex
+set -e
 
 # Usage:
 #   ./generate-ap.sh <pkgname> [path/to/<pkgname>.ini]
@@ -121,6 +121,11 @@ sed \
   -e "s/@NPMPACKAGE@/$NPMPACKAGE/g" \
   -e "s|@POST_INSTALL_EXTRA@|$(printf '%s' "$POST_INSTALL_EXTRA" | sed 's/[|&]/\\&/g')|g" \
   "$TPL_DIR/APKBUILD.in" > "$OUT_DIR/APKBUILD"
+
+  # Ensure abuild sanity finds install scripts before prepare() runs
+  printf '#!/bin/sh\nexit 0\n' > "$OUT_DIR/$PKGNAME.pre-install"
+  printf '#!/bin/sh\nexit 0\n' > "$OUT_DIR/$PKGNAME.post-install"
+  chmod +x "$OUT_DIR/$PKGNAME.pre-install" "$OUT_DIR/$PKGNAME.post-install"
 
 echo "Done. Package dir: $OUT_DIR"
 echo "Next steps:"

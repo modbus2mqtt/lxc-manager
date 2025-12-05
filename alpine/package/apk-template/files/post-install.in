@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Optional OpenSSH setup: run only if sshd is available
+if command -v sshd >/dev/null 2>&1 || [ -x /usr/sbin/sshd ]; then
+  mkdir -p /root/.ssh /var/run/sshd
+  chmod 700 /root/.ssh
+  if [ -f /etc/ssh/sshd_config ]; then
+    sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+    sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+    sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+    sed -i 's/^#*ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
+    sed -i 's/^#*UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+    if ! grep -q "^AllowUsers root" /etc/ssh/sshd_config; then echo 'AllowUsers root' >> /etc/ssh/sshd_config; fi
+  fi
+  if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then ssh-keygen -A; fi
+fi
+
+# App-specific directories: add here if needed (left empty in template)
+@POST_INSTALL_EXTRA@
+
+# Enable services if OpenRC is present
+if command -v rc-update >/dev/null 2>&1; then
+  if command -v sshd >/dev/null 2>&1 || [ -x /usr/sbin/sshd ]; then
+    rc-update add sshd default 2>/dev/null || true
+    rc-service sshd start 2>/dev/null || true
+  fi
+  rc-update add @PKGNAME@ default 2>/dev/null || true
+  rc-service @PKGNAME@ start 2>/dev/null || true
+fi
+
+exit 0

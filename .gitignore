@@ -18,7 +18,7 @@ playwright-report/
 test-results/
 
 # Alpine packaging: ignore generated package directories
-alpine/package/**/*
+alpine/package/*/
 !alpine/package/apk-template/
 !alpine/package/common/
 # Keep generator and INIs tracked

@@ -1,0 +1,79 @@
+# shellcheck shell=sh 
+pkgname=@PKGNAME@
+pkgver=@PKGVER@
+pkgrel=@PKGREL@
+pkgdesc="@PKGDESC@"
+url="@URL@"
+arch="$CARCH"
+license="@LICENSE@"
+depends="@DEPENDS@"
+makedepends="@MAKEDEPENDS@"
+install="$pkgname.pre-install $pkgname.post-install"
+options="!check"
+source="
+    files/service.initd.in
+    files/service.confd.in
+    files/pre-install.in
+    files/post-install.in
+    "
+builddir="$srcdir/$pkgname-$pkgver"
+npmpackage="@NPMPACKAGE@"
+POST_INSTALL_EXTRA='@POST_INSTALL_EXTRA@'
+
+prepare() {
+    mkdir -p "$srcdir/files"
+    sed "s/@PKGNAME@/$pkgname/g" "$startdir/files/service.initd.in" > "$srcdir/files/service.initd"
+    sed "s/@PKGNAME@/$pkgname/g" "$startdir/files/service.confd.in" > "$srcdir/files/service.confd"
+    sed "s/@PKGNAME@/$pkgname/g" "$startdir/files/pre-install.in" > "$srcdir/files/pre-install"
+        # Render post-install with safe multiline injection for @POST_INSTALL_EXTRA@
+        {
+            while IFS= read -r line; do
+                case "$line" in
+                    *"@POST_INSTALL_EXTRA@"*)
+                        if [ -n "$POST_INSTALL_EXTRA" ]; then
+                            printf '%s\n' "$POST_INSTALL_EXTRA"
+                        fi
+                        ;;
+                    *)
+                        printf '%s\n' "$(printf '%s' "$line" | sed "s/@PKGNAME@/$pkgname/g")"
+                        ;;
+                esac
+            done < "$startdir/files/post-install.in"
+        } > "$srcdir/files/post-install"
+    cp "$srcdir/files/pre-install" "$startdir/$pkgname.pre-install"
+    cp "$srcdir/files/post-install" "$startdir/$pkgname.post-install"
+    chmod +x "$startdir/$pkgname.pre-install" "$startdir/$pkgname.post-install" "$srcdir/files/service.initd"
+}
+
+build() {
+    mkdir -p "$builddir"
+    cd "$builddir" || exit 1
+    npm init -y >/dev/null 2>&1 || true
+    npmpackagev="${npmpackage}@${pkgver}"
+    echo "Installing ${npmpackage}..."
+    npm_log=$(mktemp)
+    if ! npm install --force --no-audit --no-fund --omit=dev "${npmpackagev}" >"$npm_log" 2>&1; then
+        echo "ERROR: npm install failed" >&2
+        cat "$npm_log" >&2
+        rm -f "$npm_log"
+        exit 1
+    fi
+    rm -f "$npm_log"
+    . "$startdir/../common/node-build.sh"
+    node_rebuild_native "$builddir"
+}
+
+package() {
+    install -d "$pkgdir"/usr/lib/$pkgname
+    mkdir -p "$pkgdir"/usr/lib
+    rsync -au "$builddir"/node_modules "$pkgdir"/usr/lib
+    install -d "$pkgdir"/usr/bin
+    ln -s /usr/lib/node_modules/$npmpackage/bin/$pkgname "$pkgdir"/usr/bin/$pkgname
+    install -d "$pkgdir"/etc/$pkgname
+    install -d -m 755 "$pkgdir"/config
+    install -d -m 755 "$pkgdir"/data
+    install -d -m 755 "$pkgdir"/ssl
+    install -m755 -D "$srcdir"/files/service.initd "$pkgdir"/etc/init.d/$pkgname
+    install -m644 -D "$srcdir"/files/service.confd "$pkgdir"/etc/conf.d/$pkgname
+}
+sha512sums=""
