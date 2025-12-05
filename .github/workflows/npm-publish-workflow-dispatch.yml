@@ -111,7 +111,7 @@ jobs:
           echo "::endgroup::"          
           echo "::group::Publishing to NPM registry ..."  
           npm set registry https://registry.npmjs.org/
-          npm publish --public
+          npm publish --access public
           echo "::endgroup::"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPMJS }}
