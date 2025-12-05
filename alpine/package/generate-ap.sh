@@ -25,6 +25,11 @@ fi
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 TPL_DIR="$BASE_DIR/apk-template"
 OUT_DIR="$BASE_DIR/$PKGNAME"
+ROOT_DIR="$BASE_DIR/../.."
+ROOT_PACKAGE_JSON="$ROOT_DIR/package.json"
+GIT_ORIGIN_URL=""
+GIT_OWNER=""
+GIT_REPO=""
 
 # Defaults
 PKGVER="0.0.1"
@@ -103,6 +108,40 @@ if [ -n "$APP_DIRS" ]; then
   POST_INSTALL_EXTRA="$POST_INSTALL_EXTRA\nchmod -R 755 $APP_DIRS"
 fi
 
+# Override pkgver from root package.json (if present)
+if [ -f "$ROOT_PACKAGE_JSON" ]; then
+  # Extract version value from root package.json robustly (no jq, POSIX tools)
+  PKGVER_FROM_ROOT="$(awk -F '"' '/"version"/ { for (i=1; i<=NF; i++) if ($i=="version") { print $(i+2); exit } }' "$ROOT_PACKAGE_JSON" | sed 's/[[:space:]]//g' | sed 's/,\?$//')"
+  if [ -n "$PKGVER_FROM_ROOT" ]; then
+    PKGVER="$PKGVER_FROM_ROOT"
+  fi
+fi
+
+# Derive npm scope from git origin if repository is not modbus2mqtt
+if command -v git >/dev/null 2>&1; then
+  if GIT_ORIGIN_URL=$(git -C "$ROOT_DIR" remote get-url origin 2>/dev/null); then
+    case "$GIT_ORIGIN_URL" in
+      *github.com*)
+        # Handle URLs like https://github.com/owner/repo.git or git@github.com:owner/repo.git
+        GIT_PATH=$(printf '%s' "$GIT_ORIGIN_URL" | sed -E 's#^git@github.com:##; s#^https?://github.com/##; s#\.git$##')
+        GIT_OWNER=$(printf '%s' "$GIT_PATH" | cut -d'/' -f1)
+        GIT_REPO=$(printf '%s' "$GIT_PATH" | cut -d'/' -f2)
+        ;;
+    esac
+    if [ -n "$GIT_OWNER" ] && [ -n "$GIT_REPO" ]; then
+      case "$GIT_REPO" in
+        modbus2mqtt)
+          : # keep NPMPACKAGE as-is
+          ;;
+        *)
+          # Prefer scoped npm package name @owner/pkgname
+          NPMPACKAGE="@${GIT_OWNER}/${PKGNAME}"
+          ;;
+      esac
+    fi
+  fi
+fi
+
 echo "Generating APK package skeleton for '$PKGNAME'..."
 mkdir -p "$OUT_DIR"
 
@@ -120,7 +159,7 @@ sed \
   -e "s/@LICENSE@/$LICENSE/g" \
   -e "s/@DEPENDS@/$(printf '%s' "$DEPENDS" | sed 's/[&/]/\\&/g')/g" \
   -e "s/@MAKEDEPENDS@/$(printf '%s' "$MAKEDEPENDS" | sed 's/[&/]/\\&/g')/g" \
-  -e "s/@NPMPACKAGE@/$NPMPACKAGE/g" \
+  -e "s/@NPMPACKAGE@/$(printf '%s' "$NPMPACKAGE" | sed 's/[&/]/\\&/g')/g" \
   -e "s|@POST_INSTALL_EXTRA@|$(printf '%s' "$POST_INSTALL_EXTRA" | sed 's/[|&]/\\&/g')|g" \
   -e "s|@POST_NPM_SCRIPT@|$(printf '%s' "$POST_NPM_SCRIPT" | sed 's/[|&]/\\&/g')|g" \
   "$TPL_DIR/APKBUILD.in" > "$OUT_DIR/APKBUILD"

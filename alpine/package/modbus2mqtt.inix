@@ -1,5 +1,4 @@
 pkgname=modbus2mqtt
-pkgver=0.17.2
 pkgrel=0
 pkgdesc=Modbus to MQTT bridge
 url=https://github.com/modbus2mqtt/server
