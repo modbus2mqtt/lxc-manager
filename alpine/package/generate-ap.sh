@@ -36,6 +36,7 @@ DEPENDS="nodejs npm"
 MAKEDEPENDS="npm alpine-sdk"
 NPMPACKAGE="$PKGNAME"
 POST_INSTALL_EXTRA=""
+POST_NPM_SCRIPT=""
 
 # Load INI if provided (robust parsing with spaces)
 if [ -z "$INI_FILE" ] || [ ! -f "$INI_FILE" ]; then
@@ -62,6 +63,7 @@ if [ -n "$INI_FILE" ] && [ -f "$INI_FILE" ]; then
       npmpackage)   NPMPACKAGE="$sv";;
       app_dirs)     APP_DIRS="$sv";;
       app_dirs_owner) APP_DIRS_OWNER="$sv";;
+      post_npm_script) POST_NPM_SCRIPT="$sv";;
     esac
   done < "$INI_FILE"
   # Fallback parsing if defaults remain (handles odd whitespace/BOM)
@@ -120,11 +122,28 @@ sed \
   -e "s/@MAKEDEPENDS@/$(printf '%s' "$MAKEDEPENDS" | sed 's/[&/]/\\&/g')/g" \
   -e "s/@NPMPACKAGE@/$NPMPACKAGE/g" \
   -e "s|@POST_INSTALL_EXTRA@|$(printf '%s' "$POST_INSTALL_EXTRA" | sed 's/[|&]/\\&/g')|g" \
+  -e "s|@POST_NPM_SCRIPT@|$(printf '%s' "$POST_NPM_SCRIPT" | sed 's/[|&]/\\&/g')|g" \
   "$TPL_DIR/APKBUILD.in" > "$OUT_DIR/APKBUILD"
 
-  # Ensure abuild sanity finds install scripts before prepare() runs
-  printf '#!/bin/sh\nexit 0\n' > "$OUT_DIR/$PKGNAME.pre-install"
-  printf '#!/bin/sh\nexit 0\n' > "$OUT_DIR/$PKGNAME.post-install"
+  # Render pre-install with @PKGNAME@
+  sed "s/@PKGNAME@/$PKGNAME/g" "$TPL_DIR/files/pre-install.in" > "$OUT_DIR/$PKGNAME.pre-install"
+
+  # Render post-install with @PKGNAME@ and inject optional POST_INSTALL_EXTRA as multiline
+  {
+    while IFS= read -r line; do
+      case "$line" in
+        *"@POST_INSTALL_EXTRA@"*)
+          if [ -n "$POST_INSTALL_EXTRA" ]; then
+            printf '%s\n' "$POST_INSTALL_EXTRA"
+          fi
+          ;;
+        *)
+          printf '%s\n' "$(printf '%s' "$line" | sed "s/@PKGNAME@/$PKGNAME/g")"
+          ;;
+      esac
+    done < "$TPL_DIR/files/post-install.in"
+  } > "$OUT_DIR/$PKGNAME.post-install"
+
   chmod +x "$OUT_DIR/$PKGNAME.pre-install" "$OUT_DIR/$PKGNAME.post-install"
 
 echo "Done. Package dir: $OUT_DIR"

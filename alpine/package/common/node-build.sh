@@ -29,7 +29,7 @@ node_rebuild_native() {
     echo "Rebuilding native module: $module_name"
     cd "$module_dir" || continue
     log_file=$(mktemp)
-    if ! node-gyp rebuild >"$log_file" 2>&1; then
+    if ! npx --yes node-gyp rebuild >"$log_file" 2>&1; then
       echo "WARNING: Failed to rebuild $module_name" >&2
       cat "$log_file" >&2
     fi
@@ -41,4 +41,12 @@ node_rebuild_native() {
   npm uninstall node-gyp node-gyp-build >/dev/null 2>&1 || true
 }
 
-export -f node_rebuild_native 2>/dev/null || true
+# Allow direct execution: ./node-build.sh <builddir>
+if [ "${0##*/}" = "node-build.sh" ] || [ "${0##*/}" = "node-build" ]; then
+  if [ -n "$1" ]; then
+    node_rebuild_native "$1"
+  else
+    echo "Usage: $0 <builddir>" >&2
+    exit 1
+  fi
+fi

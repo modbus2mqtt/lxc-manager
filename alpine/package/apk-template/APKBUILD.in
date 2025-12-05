@@ -9,7 +9,7 @@ license="@LICENSE@"
 depends="@DEPENDS@"
 makedepends="@MAKEDEPENDS@"
 install="$pkgname.pre-install $pkgname.post-install"
-options="!check"
+options="!check !strip"
 source="
     files/service.initd.in
     files/service.confd.in
@@ -19,30 +19,13 @@ source="
 builddir="$srcdir/$pkgname-$pkgver"
 npmpackage="@NPMPACKAGE@"
 POST_INSTALL_EXTRA='@POST_INSTALL_EXTRA@'
+POST_NPM_SCRIPT='@POST_NPM_SCRIPT@'
 
 prepare() {
     mkdir -p "$srcdir/files"
     sed "s/@PKGNAME@/$pkgname/g" "$startdir/files/service.initd.in" > "$srcdir/files/service.initd"
     sed "s/@PKGNAME@/$pkgname/g" "$startdir/files/service.confd.in" > "$srcdir/files/service.confd"
-    sed "s/@PKGNAME@/$pkgname/g" "$startdir/files/pre-install.in" > "$srcdir/files/pre-install"
-        # Render post-install with safe multiline injection for @POST_INSTALL_EXTRA@
-        {
-            while IFS= read -r line; do
-                case "$line" in
-                    *"@POST_INSTALL_EXTRA@"*)
-                        if [ -n "$POST_INSTALL_EXTRA" ]; then
-                            printf '%s\n' "$POST_INSTALL_EXTRA"
-                        fi
-                        ;;
-                    *)
-                        printf '%s\n' "$(printf '%s' "$line" | sed "s/@PKGNAME@/$pkgname/g")"
-                        ;;
-                esac
-            done < "$startdir/files/post-install.in"
-        } > "$srcdir/files/post-install"
-    cp "$srcdir/files/pre-install" "$startdir/$pkgname.pre-install"
-    cp "$srcdir/files/post-install" "$startdir/$pkgname.post-install"
-    chmod +x "$startdir/$pkgname.pre-install" "$startdir/$pkgname.post-install" "$srcdir/files/service.initd"
+    chmod +x "$srcdir/files/service.initd"
 }
 
 build() {
@@ -50,23 +33,35 @@ build() {
     cd "$builddir" || exit 1
     npm init -y >/dev/null 2>&1 || true
     npmpackagev="${npmpackage}@${pkgver}"
-    echo "Installing ${npmpackage}..."
+    echo "Installing ${npmpackagev}..."
     npm_log=$(mktemp)
     if ! npm install --force --no-audit --no-fund --omit=dev "${npmpackagev}" >"$npm_log" 2>&1; then
-        echo "ERROR: npm install failed" >&2
+        echo "ERROR: npm install failed for ${npmpackagev}" >&2
         cat "$npm_log" >&2
         rm -f "$npm_log"
         exit 1
+    else
+      echo "npm install done " >&2
     fi
     rm -f "$npm_log"
-    . "$startdir/../common/node-build.sh"
-    node_rebuild_native "$builddir"
+        if [ -n "$POST_NPM_SCRIPT" ]; then
+            echo "Executing post-npm script: $startdir/$POST_NPM_SCRIPT" >&2
+            if [ -f "$startdir/$POST_NPM_SCRIPT" ]; then
+                sh "$startdir/$POST_NPM_SCRIPT" "$builddir"
+            else
+                echo "WARNING: Post-npm script not found: $startdir/$POST_NPM_SCRIPT" >&2
+            fi
+        fi
 }
 
 package() {
     install -d "$pkgdir"/usr/lib/$pkgname
     mkdir -p "$pkgdir"/usr/lib
     rsync -au "$builddir"/node_modules "$pkgdir"/usr/lib
+        # Remove prebuilt binaries to reduce package size
+        if [ -d "$pkgdir/usr/lib/node_modules" ]; then
+            find "$pkgdir/usr/lib/node_modules" -type d -name prebuilds -exec rm -rf {} \; 2>/dev/null || true
+        fi
     install -d "$pkgdir"/usr/bin
     ln -s /usr/lib/node_modules/$npmpackage/bin/$pkgname "$pkgdir"/usr/bin/$pkgname
     install -d "$pkgdir"/etc/$pkgname
