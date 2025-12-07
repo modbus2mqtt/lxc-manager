@@ -2,7 +2,6 @@
 
 # Edit LXC network settings for a container
 # Parameters:
-#   {{ use_static_ip }} (boolean)
 #   {{ static_ip }} (string)
 #   {{ static_ip6 }} (string)
 #   {{ static_gw }} (string)
@@ -16,7 +15,8 @@ ipv4_ok=true
 static_ip="{{ static_ip }}"
 static_ip6="{{ static_ip6 }}"
 
-if [ "{{ use_static_ip }}" != "true" ]; then
+# Auto-detect static IP usage
+if [ -z "$static_ip" ] && [ -z "$static_ip6" ]; then
   echo "Static IP configuration not requested, skipping." >&2
   exit 0
 fi
