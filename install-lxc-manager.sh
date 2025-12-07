@@ -124,7 +124,30 @@ while [ "$#" -gt 0 ]; do
     --static-ip6) static_ip6="$2"; shift 2 ;;
     --static-gw6) static_gw6="$2"; shift 2 ;;
     --help|-h)
-      echo "Usage: $0 [--vm-id <id>] [--disk-size <GB>] [--memory <MB>] [--bridge <name>] [--hostname <name>] [--static-ip <cidr>] [--static-gw <ip>] [--static-ip6 <cidr>] [--static-gw6 <ip>]" >&2
+      cat >&2 <<USAGE
+Usage: $0 [options]
+
+Installs the lxc-manager as an LXC container on a Proxmox host.
+Typical IPv4 example:
+  $0 --static-ip 192.168.4.100/24 --static-gw 192.168.1.1
+
+Options:
+  --vm-id <id>          Optional VMID. If empty, the next free VMID is chosen.
+  --disk-size <GB>      LXC rootfs size in GB. Default: 1
+  --memory <MB>         Container memory in MB. Default: 256
+  --bridge <name>       Network bridge (e.g. vmbr0). Default: vmbr0
+  --hostname <name>     Container hostname. Default: lxc-manager
+  --static-ip <CIDR>    IPv4 address in CIDR notation, e.g. 192.168.4.100/24
+                        When set, you may also provide --static-gw.
+  --static-gw <IP>      IPv4 gateway, e.g. 192.168.4.1. Requires --static-ip.
+  --static-ip6 <CIDR>   IPv6 address in CIDR notation, e.g. fd00::50/64
+                        When set, you may also provide --static-gw6.
+  --static-gw6 <IP>     IPv6 gateway, e.g. fd00::1. Requires --static-ip6.
+
+Notes:
+  - Template is auto-selected for ostype=alpine.
+  - IP/gateway validation ensures proper CIDR formats and presence dependencies.
+USAGE
       exit 0 ;;
     *)
       echo "Unknown argument: $1" >&2; exit 2 ;;
@@ -161,5 +184,5 @@ execute_script_from_github \
   "static_ip=$static_ip" \
   "static_gw=$static_gw" \
   "static_ip6=$static_ip6" \
-  "static_gw6=$static_gw6" \
+  "static_gw6=$static_gw6" 
  exit 0
