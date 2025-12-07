@@ -21,8 +21,8 @@ on:
         required: false
         type: string
 env:
-  product_name: modbus2mqtt
-  main_docker_name: 'ghcr.io/${{ github.repository_owner }}/modbus2mqtt'
+  product_name: lxc-manager
+  main_docker_name: 'ghcr.io/${{ github.repository_owner }}/lxc-manager'
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -84,21 +84,26 @@ jobs:
           PACKAGER_PRIVKEY: ${{ secrets.PACKAGER_PRIVKEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          set -eux
-          # Build APK using package.sh (no QEMU needed - native execution)
+          set -euxo pipefail
           echo "Building APK for ${{ steps.platformattributes.outputs.arch }} on native runner..."
-          alpine/package/$product_name/package.sh
+
+          # Ensure generator script is executable
+          chmod +x alpine/generate-ap.sh || true
+
+          # Build APKs using the unified generator script
+          alpine/generate-ap.sh
           echo "✓ APK build completed for ${{ steps.platformattributes.outputs.arch }}"
 
           # Verify APK creation
           echo "Verifying APK creation for ${{ steps.platformattributes.outputs.arch }}..."
-          if [ -d "alpine/repo/${{ steps.platformattributes.outputs.arch }}" ]; then
-            echo "✓ Architecture directory exists: alpine/repo/${{ steps.platformattributes.outputs.arch }}"
-            ls -la "alpine/repo/${{ steps.platformattributes.outputs.arch }}/" || true
-            apk_count=$(find "alpine/repo/${{ steps.platformattributes.outputs.arch }}" -name "*.apk" | wc -l)
+          ARCH_DIR="alpine/repo/${{ steps.platformattributes.outputs.arch }}"
+          if [ -d "$ARCH_DIR" ]; then
+            echo "✓ Architecture directory exists: $ARCH_DIR"
+            ls -la "$ARCH_DIR" || true
+            apk_count=$(find "$ARCH_DIR" -name "*.apk" | wc -l)
             echo "Found $apk_count APK files for ${{ steps.platformattributes.outputs.arch }}"
           else
-            echo "ERROR: Architecture directory alpine/repo/${{ steps.platformattributes.outputs.arch }} not found!"
+            echo "ERROR: Architecture directory $ARCH_DIR not found!"
             echo "Available directories:"
             ls -la alpine/repo/ || true
             exit 1
@@ -398,7 +403,7 @@ jobs:
     needs: [prepare, build_apks, create_multiarch_manifest]
     environment: release
     steps:
-      - name: Checkout modbus2mqtt Repository
+      - name: Checkout lxc-manager Repository
         uses: actions/checkout@v5
   
       - name: Checkout  hassio-addon-repository
