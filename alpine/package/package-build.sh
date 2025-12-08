@@ -10,11 +10,14 @@ set -eu
 # - ALPINE_VERSION: optional, for logging
 echo "Container build for $PKG_NAME (Alpine ${ALPINE_VERSION:-unknown})"
 cd /work/"$PKG_NAME"
-ALPINE_REPO_VER="v${ALPINE_VERSION}"
-cat > /etc/apk/repositories <<-REPO
+# Use default Alpine repositories unless explicitly overridden
+if [ -n "${ALPINE_REPO_VER:-}" ] && [ "${USE_DEFAULT_REPOS:-0}" != "1" ]; then
+  ALPINE_REPO_VER="v${ALPINE_VERSION}"
+  cat > /etc/apk/repositories <<-REPO
 https://mirror.init7.net/alpinelinux/${ALPINE_REPO_VER}/main
 https://mirror.init7.net/alpinelinux/${ALPINE_REPO_VER}/community
 REPO
+fi
 # Install build tools
 apk add --no-cache --allow-untrusted --cache-dir /var/cache/apk abuild alpine-sdk nodejs npm shadow openssl doas rsync python3 py3-psutil make build-base linux-headers udev
 mkdir -p /etc/doas.d
