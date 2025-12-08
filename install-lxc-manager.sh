@@ -26,23 +26,11 @@ execute_script_from_github() {
   fi
   path="$1"; output_id="$2"; shift 2
 
-  raw_url="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}"
+  # Build substituted script
+  script_content=$(build_substituted_script "$path" "$@")
 
-  # Fetch script and build sed replacements for all provided key=value pairs
-  # Replaces {{ key }} with value (whitespace tolerant)
-  sed_args=""
-  for kv in "$@"; do
-    key="${kv%%=*}"
-    val="${kv#*=}"
-    # Escape sed special characters in value
-    esc_val=$(printf '%s' "$val" | sed 's/[\\&/]/\\&/g')
-    # Replace {{ key }} with val (with arbitrary spaces around key)
-    sed_args="$sed_args -e s/{{[[:space:]]*$key[[:space:]]*}}/$esc_val/g"
-  done
-
-  # Execute the fetched script with substitutions and capture output
-  # shellcheck disable=SC2086
-  script_output=$(curl -fsSL "$raw_url" | sed $sed_args | sh)
+  # Execute local
+  script_output=$(printf '%s' "$script_content" | sh)
 
   # If output_id is '-', print raw output and return
   if [ "$output_id" = "-" ]; then
@@ -50,28 +38,86 @@ execute_script_from_github() {
     return 0
   fi
 
-  # Extract desired output from JSON lines: { "id": "<output_id>", "value": "..." }
-  # Robust without jq: find line with matching id and get its value
-  output_value=$(printf '%s\n' "$script_output" \
-    | awk -v ID="$output_id" '
-      BEGIN { FS="\"" }
-      /"id"[[:space:]]*:[[:space:]]*"/ {
-        # Suche Paare id/value in der Zeile
-        for (i=1; i<=NF; i++) {
-          if ($i=="id" && $(i+2)==ID) {
-            # value steht in späterem Segment; finde das nächste Auftreten von "value" und nimm dessen Wert
-            for (j=i; j<=NF; j++) {
-              if ($j=="value") { print $(j+2); exit }
-            }
-          }
-        }
-      }')
+  output_value=$(extract_output_value "$script_output" "$output_id")
 
   if [ -n "$output_value" ]; then
     printf '%s\n' "$output_value"
     return 0
   else
     echo "ERROR: Output id '$output_id' not found" >&2
+    printf '%s\n' "$script_output" >&2
+    return 3
+  fi
+}
+
+# execute_script_on_lxc_from_github <path> <vm_id> <output_id|-> [key=value ...]
+# - Fetches a script from GitHub, applies placeholder substitutions like execute_script_from_github,
+#   then executes it inside the LXC container via lxc-attach.
+# - If <output_id> is '-', prints raw stdout; otherwise extracts JSON {"id":"...","value":"..."} like above.
+execute_script_on_lxc_from_github() {
+  if [ "$#" -lt 3 ]; then
+    echo "Usage: execute_script_on_lxc_from_github <path> <vm_id> <output_id|-> [key=value ...]" >&2
+    return 2
+  fi
+  path="$1"; vmid="$2"; output_id="$3"; shift 3
+
+  # Build substituted script
+  script_content=$(build_substituted_script "$path" "$@")
+
+  # Execute in container
+  script_output=$(printf '%s' "$script_content" | lxc-attach -n "$vmid" -- /bin/sh)
+
+  if [ "$output_id" = "-" ]; then
+    printf '%s\n' "$script_output"
+    return 0
+  fi
+
+  output_value=$(extract_output_value "$script_output" "$output_id")
+build_substituted_script() {
+  if [ "$#" -lt 1 ]; then
+    echo "Usage: build_substituted_script <path> [key=value ...]" >&2
+    return 2
+  fi
+  path="$1"; shift
+  raw_url="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}"
+
+  sed_args=""
+  for kv in "$@"; do
+    key="${kv%%=*}"
+    val="${kv#*=}"
+    esc_val=$(printf '%s' "$val" | sed 's/[\\&/]/\\&/g')
+    sed_args="$sed_args -e s/{{[[:space:]]*$key[[:space:]]*}}/$esc_val/g"
+  done
+  # shellcheck disable=SC2086
+  curl -fsSL "$raw_url" | sed $sed_args
+}
+
+extract_output_value() {
+  if [ "$#" -lt 2 ]; then
+    echo "Usage: extract_output_value <script_output> <output_id>" >&2
+    return 2
+  fi
+  script_output="$1"
+  output_id="$2"
+  printf '%s\n' "$script_output" \
+    | awk -v ID="$output_id" '
+      BEGIN { FS="\"" }
+      /"id"[[:space:]]*:[[:space:]]*"/ {
+        for (i=1; i<=NF; i++) {
+          if ($i=="id" && $(i+2)==ID) {
+            for (j=i; j<=NF; j++) {
+              if ($j=="value") { print $(j+2); exit }
+            }
+          }
+        }
+      }'
+}
+
+  if [ -n "$output_value" ]; then
+    printf '%s\n' "$output_value"
+    return 0
+  else
+    echo "ERROR: Output id '$output_id' not found (container)" >&2
     printf '%s\n' "$script_output" >&2
     return 3
   fi
@@ -153,6 +199,7 @@ Options:
 Notes:
   - Template is auto-selected for ostype=alpine.
   - IP/gateway validation ensures proper CIDR formats and presence dependencies.
+  - If --static-ip and/or --static-ip6 are provided, /etc/hosts on the Proxmox host is updated to map the chosen hostname.
 USAGE
       exit 0 ;;
     *)
@@ -193,4 +240,53 @@ execute_script_from_github \
   "static_gw6=$static_gw6" \
   "nameserver4=$nameserver4" \
   "nameserver6=$nameserver6"
+
+# 3) Update /etc/hosts on the Proxmox host (optional; only when IPs provided)
+if [ -n "$static_ip" ] || [ -n "$static_ip6" ]; then
+  execute_script_from_github \
+    "backend/json/shared/scripts/lxc-update-etc-hosts.sh" \
+    "-" \
+    "hostname=$hostname" \
+    "static_ip=$static_ip" \
+    "static_ip6=$static_ip6"
+fi
+# Start container on Proxmox after /etc/hosts update
+execute_script_from_github \
+    "backend/json/shared/scripts/lxc-start.sh" \
+    "-" \
+    "vm_id=$vm_id"
+  
+  # Wait for container to be ready (network + apk usable)
+  execute_script_from_github \
+    "backend/json/shared/scripts/wait-for-container-ready.sh" \
+    "-" \
+    "vm_id=$vm_id"
+# 4) Determine APK download URL inside the container
+apk_url=$(execute_script_on_lxc_from_github \
+  "backend/json/applications/lxc-manager/scripts/set-download-url.sh" \
+  "$vm_id" \
+  "packageurl")
+apk_key_url=$(execute_script_on_lxc_from_github \
+  "backend/json/applications/lxc-manager/scripts/set-download-url.sh" \
+  "$vm_id" \
+  "packagerpubkeyurl")
+
+# 5) Download and install APK inside the Alpine container
+# Note: Proxmox host is Debian-based; installation runs inside the LXC (Alpine)
+if [ -n "$apk_url" ]; then
+  execute_script_on_lxc_from_github \
+    "backend/json/applications/lxc-manager/scripts/300-download-and-inst-apk.sh" \
+    "$vm_id" \
+    "-" \
+    "apk_url=$apk_url" \
+    "apk_key_url=$apk_key_url"
+fi
+
+# Install required package openssh inside the container (non-optional)
+execute_script_on_lxc_from_github \
+    "backend/json/shared/scripts/install-apk-package.sh" \
+    "$vm_id" \
+    "-" \
+  "packages=openssh"
+
 exit 0

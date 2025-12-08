@@ -1,0 +1,12 @@
+{
+  "execute_on": "proxmox",
+  "name": "Wait for LXC Container Ready",
+  "description": "Wait until LXC container is ready (network + apk available)",
+  "script": "wait-for-container-ready.sh",
+  "inputs": {
+    "vm_id": { "type": "string", "required": true }
+  },
+  "outputs": [
+    { "id": "ready", "type": "string" }
+  ]
+}

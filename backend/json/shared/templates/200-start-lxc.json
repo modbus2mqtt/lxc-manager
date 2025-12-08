@@ -12,7 +12,7 @@
   ],
   "commands": [
     {
-      "command": "pct start {{ vm_id }} 1>&2"
-    }
+      "script": "lxc-start.sh"
+     }
   ]
 }

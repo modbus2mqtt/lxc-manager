@@ -1,0 +1,8 @@
+{
+  "execute_on": "lxc", 
+  "name": "Install APK Package(s)",
+  "description": "Install APK packages inside the LXC container",
+  "context": "lxc",
+  "script": "install-apk-package.sh",
+  "inputs":[{ "id": "packages", "type": "string", "required": true }]
+}
