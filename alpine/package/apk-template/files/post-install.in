@@ -3,14 +3,17 @@
 # Optional OpenSSH setup: run only if sshd is available
 if command -v sshd >/dev/null 2>&1 || [ -x /usr/sbin/sshd ]; then
   mkdir -p /root/.ssh /var/run/sshd
-  if [ -f /etc/ssh/sshd_config ]; then
-    sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
-    sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-    sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-    sed -i 's/^#*ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
-    sed -i 's/^#*UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
-    if ! grep -q "^AllowUsers root" /etc/ssh/sshd_config; then echo 'AllowUsers root' >> /etc/ssh/sshd_config; fi
-  fi
+  # Drop-in configuration instead of editing main sshd_config
+  mkdir -p /etc/ssh/sshd_config.d
+  cat > "/etc/ssh/sshd_config.d/@PKGNAME@.conf" <<CONF
+PermitRootLogin prohibit-password
+PubkeyAuthentication yes
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+UsePAM no
+AllowUsers root
+CONF
+  # Generate host keys if missing
   if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then ssh-keygen -A; fi
 fi
 
@@ -29,7 +32,7 @@ fi
 
 # Ensure runtime directory ownership
 if id @PKGNAME@ >/dev/null 2>&1; then
-  chown -R @PKGNAME@:dialout /var/lib/@PKGNAME@ 2>/dev/null || true
+  install -d -m 755 -o @PKGNAME@ -g dialout /var/lib/@PKGNAME@
 fi
 
 # Generate per-user SSH key for @PKGNAME@ if missing (requires ssh-keygen)
@@ -42,8 +45,6 @@ if id @PKGNAME@ >/dev/null 2>&1; then
     if [ ! -s "$home/.ssh/id_ed25519" ]; then
       # Create an ed25519 key without passphrase, comment indicates host
       su -s /bin/sh -c "ssh-keygen -q -t ed25519 -N '' -C '${user}@$(hostname)' -f '$home/.ssh/id_ed25519'" "$user" 2>/dev/null || true
-      chmod 600 "$home/.ssh/id_ed25519" 2>/dev/null || true
-      chmod 644 "$home/.ssh/id_ed25519.pub" 2>/dev/null || true
     fi
   fi
 fi
