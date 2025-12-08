@@ -1,5 +1,5 @@
 import { NgZone, OnDestroy, Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatExpansionModule } from '@angular/material/expansion';
 import { IProxmoxExecuteMessage } from '../../shared/types';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -7,7 +7,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 @Component({
   selector: 'app-process-monitor',
   standalone: true,
-  imports: [CommonModule, MatExpansionModule, HttpClientModule],
+  imports: [MatExpansionModule, HttpClientModule],
   templateUrl: './process-monitor.html',
   styleUrl: './process-monitor.scss',
 })

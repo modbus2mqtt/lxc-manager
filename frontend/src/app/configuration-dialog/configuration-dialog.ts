@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ProxmoxConfigurationService } from '../ve-configuration.service';
 import { ISsh } from '../../shared/types';
@@ -7,7 +7,7 @@ import { ISsh } from '../../shared/types';
 @Component({
   selector: 'app-configuration-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './configuration-dialog.html',
   styleUrl: './configuration-dialog.scss',
 })

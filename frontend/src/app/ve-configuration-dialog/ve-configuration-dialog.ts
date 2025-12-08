@@ -2,7 +2,7 @@
 // ...existing code...
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -16,9 +16,15 @@ import { ProxmoxConfigurationService } from '../ve-configuration.service';
   selector: 'app-ve-configuration-dialog',
   standalone: true,
   imports: [
-    CommonModule, MatDialogModule, FormsModule, ReactiveFormsModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule, MatTooltipModule, MatSlideToggleModule
-  ],
+    MatDialogModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatTooltipModule,
+    MatSlideToggleModule
+],
   templateUrl: './ve-configuration-dialog.html',
   styleUrl: './ve-configuration-dialog.scss',
 })
