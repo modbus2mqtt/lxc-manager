@@ -88,6 +88,7 @@ export interface IError {
 export enum ApiUri {
   SshConfigs = "/api/sshconfigs",
   SshConfig = "/api/sshconfig",
+    SshConfigGET = "/api/ssh/config/:host",
   SshCheck = "/api/ssh/check",
   VeConfiguration = "/api/ve-configuration/:application/:task/:veContext",
   VeExecute = "/api/ve/execute",

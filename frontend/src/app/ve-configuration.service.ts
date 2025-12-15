@@ -93,6 +93,14 @@ export class VeConfigurationService {
     );
   }
 
+  getSshConfigKey(host: string): Observable<{ key: string }> {
+    const url = ApiUri.SshConfigGET.replace(':host', encodeURIComponent(host));
+    return this.http.get<{ key: string }>(url).pipe(
+      tap((res) => this.setVeContextKeyFrom(res)),
+      catchError(VeConfigurationService.handleError)
+    );
+  }
+
   checkSsh(host: string, port?: number) {
     const params = new URLSearchParams({ host });
     if (typeof port === 'number') params.set('port', String(port));

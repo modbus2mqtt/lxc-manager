@@ -50,7 +50,7 @@ describe("WebApp API", () => {
   describe("SshConfig GET/PUT/POST", () => {
     it("GET: returns key ve_$host for existing config", async () => {
       await request(app).post(ApiUri.SshConfig).send({ host: "hostX", port: 22 });
-      const res = await request(app).get(`${ApiUri.SshConfig}?host=hostX`);
+      const res = await request(app).get(ApiUri.SshConfigGET.replace(":host", "hostX"));
       expect(res.status).toBe(200);
       expect(res.body.key).toBe("ve_hostX");
     });

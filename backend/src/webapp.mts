@@ -71,10 +71,10 @@ export class VEWebApp {
         res.status(500).json({ error: err.message });
       }
     });
-    // Get SSH config key by host
-    this.app.get(ApiUri.SshConfig, (req, res) => {
+    // Get SSH config key by host (mandatory path param)
+    this.app.get(ApiUri.SshConfigGET, (req, res) => {
       try {
-        const host = String(req.query.host || "").trim();
+        const host = String(req.params.host || "").trim();
         if (!host) {
           res.status(400).json({ error: "Missing host" });
           return;
