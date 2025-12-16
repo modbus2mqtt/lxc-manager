@@ -63,11 +63,24 @@ export class VeExecution extends EventEmitter {
     let sshArgs: string[] = [];
     if (sshCommand === "ssh") {
       if (!this.veContext) throw new Error("SSH parameters not set");
-      const host = this.veContext.host;
+      let host = this.veContext.host;
+      // Ensure root user is used when no user is specified
+      if (typeof host === "string" && !host.includes("@")) {
+        host = `root@${host}`;
+      }
       const port = this.veContext.port || 22;
       sshArgs = [
         "-o",
         "StrictHostKeyChecking=no",
+        "-o",
+        "BatchMode=yes", // non-interactive: fail if auth requires password
+        "-o",
+        "PasswordAuthentication=no", // prevent password prompt
+        "-o",
+        "PreferredAuthentications=publickey", // try keys only
+        "-o",
+        "LogLevel=ERROR", // suppress login banners and info
+        "-T", // disable pseudo-tty to avoid MOTD banners
         "-q", // Suppress SSH diagnostic output
         "-p",
         String(port),
@@ -119,7 +132,18 @@ export class VeExecution extends EventEmitter {
       }
 
       try {
-        const parsed = JSON.parse(stdout);
+        // Some systems print login banners before command output. Strip leading banner text.
+        let cleaned = stdout.trim();
+        const firstJsonIdx = Math.min(
+          ...["{", "["].map((c) => {
+            const i = cleaned.indexOf(c);
+            return i === -1 ? Number.POSITIVE_INFINITY : i;
+          }),
+        );
+        if (Number.isFinite(firstJsonIdx) && firstJsonIdx > 0) {
+          cleaned = cleaned.slice(firstJsonIdx);
+        }
+        const parsed = JSON.parse(cleaned);
         // Validate against schema; may be one of:
         // - IOutput
         // - IOutput[]

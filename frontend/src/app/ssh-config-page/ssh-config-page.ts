@@ -73,6 +73,11 @@ export class SshConfigPage implements OnInit {
       this.error = 'Please enter a valid host and port.';
       return;
     }
+    // Prevent duplicate host names
+    if (this.ssh.some((s) => s.host === host)) {
+      this.error = 'Host already exists. Please choose a different host name.';
+      return;
+    }
     const makeCurrent = this.ssh.length === 0;
     this.configService.setSshConfig({ host, port, current: makeCurrent }).subscribe({
       next: () => {
