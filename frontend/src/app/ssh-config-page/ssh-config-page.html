@@ -60,9 +60,7 @@
             <pre class="stderr-content">{{ getCurrentStderr() }}</pre>
           </div>
         }
-      }
-
-      <mat-accordion multi>
+        <mat-accordion multi>
         @if (publicKeyCommand) {
           <mat-expansion-panel>
             <mat-expansion-panel-header>
@@ -109,7 +107,10 @@
             </div>
           </mat-expansion-panel>
         }
-      </mat-accordion>
+        </mat-accordion>
+
+      }
+
 
       @if (error) { <div class="error">{{ error }}</div> }
     </form>
