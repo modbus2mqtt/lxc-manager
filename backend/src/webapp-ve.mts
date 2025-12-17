@@ -1,7 +1,7 @@
 import { IVEContext, IVMContext } from "./backend-types.mjs";
 import { StorageContext } from "./storagecontext.mjs";
 
-import express from "express";
+import express, { RequestHandler } from "express";
 import fs from "fs";
 import path from "path";
 import {
@@ -10,6 +10,7 @@ import {
   TaskType,
   IVeConfigurationResponse,
   IVeExecuteMessagesResponse,
+  IPostVeConfigurationBody,
 } from "./types.mjs";
 import { IRestartInfo, VeExecution } from "./ve-execution.mjs";
 
@@ -24,16 +25,32 @@ export class WebAppVE {
     res.status(statusCode).json(payload);
   }
 
+  private post<
+    TParams extends Record<string, string>,
+    TBody,
+    TQuery extends Record<string, string | undefined> = Record<string, string | undefined>
+  >(
+    path: string,
+    handler: (
+      req: express.Request<TParams, unknown, TBody, TQuery>,
+      res: express.Response
+    ) => void | Promise<unknown>
+  ): void {
+    this.app.post(path, express.json(), handler as unknown as RequestHandler);
+  }
+
   constructor(private app: express.Application) {}
   init() {
     // Initialize VE specific web app features here
     // POST /api/proxmox-configuration/:application/:task
-    this.app.post(ApiUri.VeConfiguration, express.json(), async (req, res) => {
-      const { application, task } = req.params;
-      const restartKeyParam =
-        (req.query.restartKey as string | undefined) || undefined;
-      const veContextKey = req.params.veContext as string;
-      const params = req.body; // Array of { name, value }
+    this.post<
+      { application: string; task: string; veContext: string },
+      IPostVeConfigurationBody,
+      { restartKey?: string }
+    >(ApiUri.VeConfiguration, async (req, res) => {
+      const { application, task, veContext: veContextKey } = req.params;
+      const restartKeyParam = req.query.restartKey;
+      const { params } = req.body;
       if (!Array.isArray(params)) {
         return res
           .status(400)
@@ -70,11 +87,12 @@ export class WebAppVE {
           const p = defaults.get(param.name);
           if (!p && param.default !== undefined) {
             // do not overwrite existing defaults
-            defaults.set(param.name, param.default);
+            defaults.set(param.id, param.default);
           }
         });
         // 3. Start ProxmoxExecution
-        const exec = new VeExecution(commands, params, veCtxToUse, defaults);
+        const inputs = params.map(p => ({ id: p.name, value: p.value }));
+        const exec = new VeExecution(commands, inputs, veCtxToUse, defaults);
         exec.on("message", (msg: IVeExecuteMessage) => {
           const existing = this.messages.find(
             (g) => g.application === application && g.task === task,
@@ -94,18 +112,23 @@ export class WebAppVE {
           const stored = this.restartInfos.get(restartKeyParam);
           if (stored) restartInfoToUse = stored;
         }
-        const result = exec.run(restartInfoToUse);
-        if (result) {
-          const key = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-          this.restartInfos.set(key, result);
-          const payload: IVeConfigurationResponse = {
-            success: false,
-            restartKey: key,
-          };
-          res.status(200).json(payload);
-          return;
-        }
+        
+        // Respond immediately, run execution in background
         this.returnResponse<IVeConfigurationResponse>(res, { success: true });
+        
+        // Run asynchronously using setImmediate to not block the event loop
+        setImmediate(() => {
+          try {
+            const result = exec.run(restartInfoToUse);
+            if (result) {
+              const key = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+              this.restartInfos.set(key, result);
+            }
+          } catch (err: any) {
+            // Log error, execution already responded
+            console.error("Execution error:", err.message);
+          }
+        });
       } catch (err: any) {
         res
           .status(500)

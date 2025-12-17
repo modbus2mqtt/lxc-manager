@@ -89,16 +89,19 @@ export class VeConfigurationDialog implements OnInit {
     this.configService.postVeConfiguration(application, task, params).subscribe({
       next: (res) => {
         this.loading.set(false);
-        this.dialogRef.close(this.form.value);
         // Navigate to process monitor; pass restartKey if present
         const extras: NavigationExtras = res.restartKey ? { queryParams: { restartKey: res.restartKey } } : {};
         this.configService['router'].navigate(['/monitor'], extras);
+        // Trigger navigation immediately (do not wait for post)
       },
       error: (err: unknown) => {
         this.error.set(this.formatError('Failed to install configuration', err));
         this.loading.set(false);
       }
-    });
+    })
+    this.dialogRef.close(this.form.value);
+    this.configService['router'].navigate(['/monitor']);
+ ;
   }
 
   close(): void {

@@ -16,7 +16,8 @@
       "type": "string",
       "required": false,
       "default": "latest",
-      "description": "Version of the package to install"
+      "description": "Version of the package to install",
+      "advanced": true
     }
   ],
   "commands": [

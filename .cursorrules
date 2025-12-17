@@ -22,6 +22,9 @@
 - Parameters are passed between templates by matching parameter names (name equality)
 - Parameters are automatically discovered across templates; no need to initialize them in the first template
 - Best practice: Create a `set-parameters.json` template for each application to define application-specific defaults (e.g., `ostype`)
+- if outputs is in the form  { "id": "<some id>", "default": "<some value>"}, this parameter is considered as default.
+- if outputs is in the form  { "id": "<some id>", "default": "<some value>"}, this parameter is considered as default.
+
 - Child applications (via `extends`) can override `set-parameters.json` to customize inherited behavior
 
 
@@ -35,8 +38,9 @@
 - Scripts run inside Alpine Linux LXC containers
 - Use POSIX-compliant `/bin/sh`, not bash
 - Template variables use `{{ variable }}` syntax
-- Output variables as `key=value` on stdout
-- Errors go to stderr
+- stdout must only contain JSON output valid against `backend/schemas/outputs.schema.json`
+- All other output (logs, debug, errors) must go to stderr
+
 
 ## Language
 - All files must use English for file content, variable names, keys, strings, and outputs. Descriptions, comments, and documentation inside files must also be in English.

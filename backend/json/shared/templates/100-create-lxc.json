@@ -8,7 +8,8 @@
       "name": "ID of the virtual machine",
       "type": "number",
       "default": "",
-      "description": "ID of the virtual machine"
+      "description": "ID of the virtual machine",
+      "advanced": true
     },
     {
       "id": "template_path",
@@ -21,21 +22,24 @@
       "name": "Disk size",
       "type": "string",
       "default": "4",
-      "description": "Disk size for the container in GB"
+      "description": "Disk size for the container in GB",
+      "advanced": true
     },
     {
       "id": "memory",
       "name": "Memory in MB",
       "type": "number",
       "default": 512,
-      "description": "Memory for the container in MB"
+      "description": "Memory for the container in MB",
+      "advanced": true
     },
     {
       "id": "bridge",
       "name": "Network bridge",
       "type": "string",
       "default": "vmbr0",
-      "description": "Network bridge to use"
+      "description": "Network bridge to use",
+      "advanced": true
     },
     {
       "id": "hostname",

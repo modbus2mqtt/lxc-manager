@@ -20,6 +20,7 @@ import { StorageContext } from "./storagecontext.mjs";
 import { Ssh } from "./ssh.mjs";
 import { IVEContext } from "./backend-types.mjs";
 import { ITemplateProcessorLoadResult } from "./templateprocessor.mjs";
+import { WebAppVE } from "./webapp-ve.mjs";
 export class VEWebApp {
   app: express.Application;
   public httpServer: http.Server;
@@ -285,7 +286,7 @@ export class VEWebApp {
       } catch (err: any) {
         return res
           .status(500)
-          .json({ success: false, error: err?.message || "Unknown error" });
+          .json({ success: false, error: err || "Unknown error" });
       }
     });
     this.app.get(ApiUri.Applications, (req, res) => {
@@ -311,6 +312,8 @@ export class VEWebApp {
         res.status(500).json({ error: err.message });
       }
     });
+    const webAppVE = new WebAppVE(this.app);
+    webAppVE.init();
   }
 }
 

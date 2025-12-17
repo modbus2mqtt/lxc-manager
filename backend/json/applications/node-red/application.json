@@ -9,7 +9,7 @@
     "200-start-lxc.json",
     "210-wait-for-container-ready.json",
     "330-install-apk-package.json",
-    "install-node-red.json",
+    "340-install-node-application.json",
     "350-create-openrc-service.json"
   ]
 }

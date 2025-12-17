@@ -1,0 +1,22 @@
+[
+  {
+    "name": "hostname",
+    "value": "node-red"
+  },
+  {
+    "name": "disk_size",
+    "value": "4"
+  },
+  {
+    "name": "memory",
+    "value": 512
+  },
+  {
+    "name": "bridge",
+    "value": "vmbr0"
+  },
+  {
+    "name": "version",
+    "value": "latest"
+  }
+]

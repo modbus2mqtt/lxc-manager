@@ -1,23 +1,29 @@
 {
   "execute_on": "ve",
-  "name": "Set OS Type",
-  "description": "Set the OS type for Node-RED container",
+  "name": "Set Parameters",
+  "description": "Set application-specific parameters for Node-RED",
   "parameters": [
-    {
-      "id": "ostype",
-      "name": "OS Type",
+    { "id": "hostname",
+      "name": "Hostname",
       "type": "string",
-      "default": "alpine",
-      "required": false,
-      "description": "Operating system type for the container"
+      "default": "node-red",
+      "required": true,
+      "description": "Hostname for the Node-RED container"
     }
   ],
   "commands": [
     {
-      "name": "Set OS Type",
-      "command": "echo 'OS type set to {{ ostype }}'",
-      "description": "Set the OS type variable"
+      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"nodejs npm\"},{\"id\":\"command\",\"value\":\"node-red\"},{\"id\":\"command_args\",\"value\":\"--userDir $DATA_DIR\"},{\"id\":\"package\",\"value\":\"node-red\"},{\"id\":\"owned_paths\",\"value\":\"\"},{\"id\":\"uid\",\"value\":\"\"},{\"id\":\"group\",\"value\":\"\"}]'"
     }
+  ],
+  "outputs": [
+    { "id": "ostype" },
+    { "id": "packages" },
+    { "id": "command" },
+    { "id": "command_args" },
+    { "id": "package" },
+    { "id": "owned_paths" },
+    { "id": "uid" },
+    { "id": "group" }
   ]
 }
-

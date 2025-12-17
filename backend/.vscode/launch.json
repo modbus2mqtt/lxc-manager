@@ -21,6 +21,12 @@
             "program": "${workspaceFolder}/dist/webapp.mjs",
             "preLaunchTask": "npm: build",
             "request": "launch",
+            "sourceMaps": true,
+            "trace": true,
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.mjs",
+                "${workspaceFolder}/dist/**/*.mjs.map"
+            ],
             "skipFiles": [
                 "<node_internals>/**"
             ],
