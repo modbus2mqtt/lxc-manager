@@ -33,6 +33,7 @@
           "description": { "type": "string" },
           "required": { "type": "boolean", "default": false },
           "secure": { "type": "boolean", "default": false },
+          "advanced": { "type": "boolean", "default": false },
           "default": { "type": ["string", "number", "boolean"] }
         },
         "required": ["name", "id", "type"],

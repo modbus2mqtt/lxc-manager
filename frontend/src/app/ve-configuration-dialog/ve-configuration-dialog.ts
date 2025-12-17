@@ -34,6 +34,7 @@ export class VeConfigurationDialog implements OnInit {
   groupedParameters: Record<string, IParameter[]> = {};
   loading = signal(true);
   error = signal<string | null>(null);
+  showAdvanced = signal(false);
   private configService: VeConfigurationService = inject(VeConfigurationService);
   public dialogRef: MatDialogRef<VeConfigurationDialog> = inject(MatDialogRef<VeConfigurationDialog>);
   private fb: FormBuilder = inject(FormBuilder);
@@ -66,10 +67,9 @@ export class VeConfigurationDialog implements OnInit {
         this.form.markAllAsTouched();
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Failed to load parameters');
+      error: (err: unknown) => {
+        this.error.set(this.formatError('Failed to load parameters', err));
         this.loading.set(false);
-        this.dialogRef.close();
       }
     });
   }
@@ -94,8 +94,8 @@ export class VeConfigurationDialog implements OnInit {
         const extras: NavigationExtras = res.restartKey ? { queryParams: { restartKey: res.restartKey } } : {};
         this.configService['router'].navigate(['/monitor'], extras);
       },
-      error: () => {
-        this.error.set('Failed to install configuration');
+      error: (err: unknown) => {
+        this.error.set(this.formatError('Failed to install configuration', err));
         this.loading.set(false);
       }
     });
@@ -105,7 +105,56 @@ export class VeConfigurationDialog implements OnInit {
     this.dialogRef.close();
   }
 
+  toggleAdvanced(): void {
+    this.showAdvanced.set(!this.showAdvanced());
+  }
+
+  hasAdvancedParams(): boolean {
+    return this.unresolvedParameters.some(p => p.advanced);
+  }
+
+  isVisible(param: IParameter): boolean {
+    if (param.advanced && !this.showAdvanced()) return false;
+    if (param.if && !this.form.get(param.if)?.value) return false;
+    return true;
+  }
+
+  isGroupVisible(groupName: string): boolean {
+    const params = this.groupedParameters[groupName];
+    return params?.some(p => this.isVisible(p)) ?? false;
+  }
+
   get groupNames(): string[] {
     return Object.keys(this.groupedParameters);
+  }
+
+  private formatError(prefix: string, err: unknown): string {
+    if (!err) return prefix;
+    try {
+      const errObj = err as Record<string, unknown>;
+      const errorBody = errObj['error'] as Record<string, unknown> | undefined;
+      const innerError = errorBody?.['error'] as Record<string, unknown> | undefined;
+      
+      if (innerError) {
+        const name = innerError['name'] || 'Error';
+        const message = innerError['message'] || '';
+        const details = innerError['details'] as Array<Record<string, unknown>> | undefined;
+        
+        let result = `${prefix}\n\n${name}: ${message}`;
+        if (details && Array.isArray(details)) {
+          result += '\n\nDetails:\n' + details.map(d => `• ${d['message']}`).join('\n');
+        }
+        return result;
+      }
+      if (errorBody && typeof errorBody === 'object') {
+        return `${prefix}:\n${JSON.stringify(errorBody, null, 2)}`;
+      }
+      if (errObj['message']) {
+        return `${prefix}: ${errObj['message']}`;
+      }
+      return `${prefix}:\n${JSON.stringify(err, null, 2)}`;
+    } catch {
+      return `${prefix}: ${String(err)}`;
+    }
   }
 }

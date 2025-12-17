@@ -65,6 +65,7 @@ export interface IParameter {
   description?: string;
   required?: boolean;
   secure?: boolean;
+  advanced?: boolean;
   default?: string | number | boolean;
   enumValues?: string[];
   templatename?: string;

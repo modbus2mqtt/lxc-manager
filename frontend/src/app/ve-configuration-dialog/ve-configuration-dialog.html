@@ -14,11 +14,12 @@
 		@if (!error()) {
 			<div class="group-container">
 				@for (groupName of groupNames; track groupName) {
+					@if (isGroupVisible(groupName)) {
 					<div class="param-group">
 						<div class="group-title">{{ groupName }}</div>
 						<div class="group-fields">
 							@for (param of groupedParameters[groupName]; track param) {
-								@if (!param.if || form.get(param.if)?.value) {
+								@if (isVisible(param)) {
 									@switch (param.type) {
 										@case ('boolean') {
 										<div class="param-field param-toggle">
@@ -68,15 +69,26 @@
 							}
 						</div>
 					</div>
+					}
 				}
 			</div>
+			@if (hasAdvancedParams()) {
+				<div class="advanced-toggle" (click)="toggleAdvanced()">
+					<span class="toggle-icon">{{ showAdvanced() ? '▼' : '▶' }}</span>
+					<span class="toggle-text">{{ showAdvanced() ? 'Hide' : 'Show' }} Advanced Options</span>
+				</div>
+			}
 			<div class="dialog-actions">
 				<button mat-stroked-button color="primary" type="button" (click)="close()">Cancel</button>
 				<button mat-flat-button color="accent" type="submit" [disabled]="form.invalid || loading()">Install</button>
 			</div>
 		}
 		@if (error()) {
-			<div class="error">{{ error() }}</div>
+			<div class="error-box">
+				<strong>Error</strong>
+				<pre>{{ error() }}</pre>
+				<button mat-stroked-button color="warn" type="button" (click)="close()">Close</button>
+			</div>
 		}
 	}
 	@if (loading()) {

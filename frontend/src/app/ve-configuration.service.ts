@@ -90,7 +90,8 @@ export class VeConfigurationService {
     const base = ApiUri.UnresolvedParameters
       .replace(":application", encodeURIComponent(application))
       .replace(":task", encodeURIComponent(task));
-    return this.get<IUnresolvedParametersResponse>(base);
+    const url = this.veContextKey ? base.replace(":veContext", this.veContextKey) : base;
+    return this.http.get<IUnresolvedParametersResponse>(url);
   }
 
   getSshConfigs(): Observable<ISsh[]> {
