@@ -15,25 +15,25 @@ fi
 case "$OSTYPE" in
   alpine)
     # Ensure apk is available and index up-to-date
-    if ! command -v apk >/dev/null 2>&1; then
+    if ! command -v apk  >&2; then
       echo "Error: apk not found (not an Alpine Linux environment)" >&2
       exit 1
     fi
-    apk update || true
+    apk update  >&2
     # shellcheck disable=SC2086
-    apk add --no-cache $PACKAGES
+    apk add --no-cache $PACKAGES >&2
     ;;
   debian|ubuntu)
     # Ensure apt is available
-    if ! command -v apt-get >/dev/null 2>&1; then
+    if ! command -v apt-get  >&2; then
       echo "Error: apt-get not found (not a Debian/Ubuntu environment)" >&2
       exit 1
     fi
     # Update package index
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq
+    apt-get update -qq >&2
     # shellcheck disable=SC2086
-    apt-get install -y --no-install-recommends $PACKAGES
+    apt-get install -y --no-install-recommends $PACKAGES >&2
     ;;
   *)
     echo "Error: Unsupported ostype: $OSTYPE" >&2

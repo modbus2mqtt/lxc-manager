@@ -22,7 +22,6 @@
   ],
   "commands": [
     {
-      "name": "Install Node Application",
       "script": "install-node-application.sh",
       "description": "Install the npm package globally"
     }

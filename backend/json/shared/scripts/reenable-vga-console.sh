@@ -16,6 +16,6 @@ if grep -q "video=default:d" /etc/default/grub; then
 fi
 
 # 3. Update grub and inform user
-update-grub
+update-grub >&2
 
 echo "VGA output re-enabled. Please reboot the host to apply changes." >&2

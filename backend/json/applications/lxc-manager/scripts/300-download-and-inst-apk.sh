@@ -31,7 +31,7 @@ case "$APK_URL" in
 esac
 
 # Install
-apk add --no-cache /root/package.apk
+apk add --no-cache /root/package.apk >&2
 
 # Emit outputs
 echo '[{"id":"apk_file","value":"/root/package.apk"}]'

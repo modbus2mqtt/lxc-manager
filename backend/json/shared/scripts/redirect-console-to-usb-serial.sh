@@ -54,7 +54,7 @@ if ! grep -q "$VIDEO_PARAM" /etc/default/grub; then
 fi
 
 # 4. Update grub and reboot required
-update-grub
+update-grub >&2
 
 echo "Serial console enabled on /dev/$SERIAL_DEV ($BAUD baud)." >&2
 echo "Graphics output disabled." >&2

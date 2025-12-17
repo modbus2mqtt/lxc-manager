@@ -13,7 +13,6 @@
   ],
   "commands": [
     {
-      "name": "Install Packages",
       "script": "install-apk-package.sh",
       "description": "Run apk add for provided packages in the container"
     }
