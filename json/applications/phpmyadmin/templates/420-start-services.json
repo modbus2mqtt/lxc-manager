@@ -4,7 +4,8 @@
   "description": "Start and enable lighttpd service",
   "commands": [
     {
-      "command": "rc-service lighttpd start >&2 && rc-update add lighttpd default >&2"
+      "script": "start-lighttpd.sh",
+      "description": "Start and enable lighttpd service"
     }
   ]
 }

@@ -4,6 +4,10 @@
     "value": "phpmyadmin"
   },
   {
+    "name": "http_port",
+    "value": "80"
+  },
+  {
     "name": "disk_size",
     "value": "4"
   },
@@ -18,5 +22,9 @@
   {
     "name": "db_host",
     "value": "mariadb"
+  },
+  {
+    "name": "db_port",
+    "value": "3306"
   }
 ]

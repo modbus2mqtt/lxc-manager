@@ -32,10 +32,10 @@
       "id": "bind_address",
       "name": "Bind Address",
       "type": "string",
-      "default": "127.0.0.1",
+      "default": "0.0.0.0",
       "required": false,
       "advanced": true,
-      "description": "IP address to bind to. Use 0.0.0.0 to accept connections from all interfaces (not recommended for production)"
+      "description": "IP address to bind to. Use 0.0.0.0 to accept connections from all interfaces (required for remote access, e.g., from phpMyAdmin)"
     },
     {
       "id": "allow_remote_root",

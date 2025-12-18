@@ -10,15 +10,25 @@
       "default": "phpmyadmin",
       "required": true,
       "description": "Hostname for the phpMyAdmin container"
+    },
+    {
+      "id": "http_port",
+      "name": "HTTP Port",
+      "type": "string",
+      "default": "80",
+      "required": false,
+      "advanced": true,
+      "description": "Port number for lighttpd HTTP server (default: 80)"
     }
   ],
   "commands": [
     {
-      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"lighttpd php fcgi php-cgi phpmyadmin\"}]'"
+      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"lighttpd php fcgi php-cgi phpmyadmin\"},{\"id\":\"http_port\",\"value\":\"{{http_port}}\"}]'"
     }
   ],
   "outputs": [
     { "id": "ostype" },
-    { "id": "packages" }
+    { "id": "packages" },
+    { "id": "http_port" }
   ]
 }

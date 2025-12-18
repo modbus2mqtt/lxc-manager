@@ -53,6 +53,16 @@ if [ "$DATADIR" != "/var/lib/mysql" ]; then
   fi
 fi
 
+# Disable skip-networking to allow remote connections
+echo "Disabling skip-networking to allow remote connections..." >&2
+if grep -q "^skip-networking" "$CONFIG_FILE" 2>/dev/null; then
+  # Comment out skip-networking if it's enabled
+  sed -i "s|^skip-networking|#skip-networking|g" "$CONFIG_FILE"
+elif grep -q "^#skip-networking" "$CONFIG_FILE" 2>/dev/null; then
+  # Already commented out, nothing to do
+  echo "skip-networking is already disabled" >&2
+fi
+
 echo "MariaDB configuration updated" >&2
 
 # Restart service if it's running to apply configuration changes

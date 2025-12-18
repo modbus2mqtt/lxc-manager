@@ -16,6 +16,7 @@
       "id": "db_port",
       "name": "MariaDB Port",
       "type": "string",
+      "default": "3306",
       "required": false,
       "advanced": true,
       "description": "Port number of the MariaDB server"

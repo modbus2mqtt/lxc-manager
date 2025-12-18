@@ -9,11 +9,20 @@
       "default": "node-red",
       "required": true,
       "description": "Hostname for the Node-RED container"
+    },
+    {
+      "id": "http_port",
+      "name": "HTTP Port",
+      "type": "string",
+      "default": "1880",
+      "required": false,
+      "advanced": true,
+      "description": "Port number for Node-RED HTTP server (default: 1880)"
     }
   ],
   "commands": [
     {
-      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"nodejs npm\"},{\"id\":\"command\",\"value\":\"node-red\"},{\"id\":\"command_args\",\"value\":\"--userDir $DATA_DIR\"},{\"id\":\"package\",\"value\":\"node-red\"},{\"id\":\"owned_paths\",\"value\":\"\"},{\"id\":\"uid\",\"value\":\"\"},{\"id\":\"group\",\"value\":\"\"}]'"
+      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"nodejs npm\"},{\"id\":\"command\",\"value\":\"node-red\"},{\"id\":\"command_args\",\"value\":\"--userDir $DATA_DIR --port {{http_port}}\"},{\"id\":\"package\",\"value\":\"node-red\"},{\"id\":\"owned_paths\",\"value\":\"\"},{\"id\":\"uid\",\"value\":\"\"},{\"id\":\"group\",\"value\":\"\"},{\"id\":\"http_port\",\"value\":\"{{http_port}}\"}]'"
     }
   ],
   "outputs": [
@@ -24,6 +33,7 @@
     { "id": "package" },
     { "id": "owned_paths" },
     { "id": "uid" },
-    { "id": "group" }
+    { "id": "group" },
+    { "id": "http_port" }
   ]
 }

@@ -6,11 +6,13 @@
 #   {{ uid }}          - optional user id
 #   {{ group }}        - optional group name
 #   {{ owned_paths }}  - space-separated paths to own
+#   {{ bind_privileged_port }} - allow binding to privileged ports (80, 443, etc.)
 
 COMMAND="{{ command }}"
 USER_ID="{{ uid }}"
 GROUP_NAME="{{ group }}"
 OWNED_PATHS="{{ owned_paths }}"
+BIND_PRIVILEGED_PORT="{{ bind_privileged_port }}"
 
 if [ -z "$COMMAND" ]; then
   echo "Missing command" >&2
@@ -112,6 +114,22 @@ start_pre() {
 EOF
 
 chmod +x "/etc/init.d/$SERVICE_NAME"
+
+# Set CAP_NET_BIND_SERVICE capability if requested (allows binding to ports < 1024)
+if [ "$BIND_PRIVILEGED_PORT" = "true" ]; then
+  # Install libcap if not available (needed for setcap)
+  if ! command -v setcap >/dev/null 2>&1; then
+    apk add --no-cache libcap >&2
+  fi
+  # Set capability to allow binding to privileged ports
+  if command -v setcap >/dev/null 2>&1; then
+    setcap 'cap_net_bind_service=+ep' "$COMMAND_PATH" >&2 || {
+      echo "Warning: Failed to set CAP_NET_BIND_SERVICE capability. Service may not be able to bind to privileged ports." >&2
+    }
+  else
+    echo "Warning: setcap not available after installation. Cannot set CAP_NET_BIND_SERVICE capability." >&2
+  fi
+fi
 
 # Enable and start service
 rc-update add "$SERVICE_NAME" default >&2

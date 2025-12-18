@@ -7,9 +7,9 @@
       "id": "bind_address",
       "name": "Bind Address",
       "type": "string",
-      "default": "127.0.0.1",
+      "default": "0.0.0.0",
       "required": true,
-      "description": "IP address to bind to"
+      "description": "IP address to bind to (0.0.0.0 for all interfaces, required for remote access)"
     },
     {
       "id": "datadir",

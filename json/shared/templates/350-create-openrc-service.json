@@ -41,6 +41,15 @@
       "required": false,
       "default": "",
       "description": "Space-separated list of files/directories the user should own with rw access"
+    },
+    {
+      "id": "bind_privileged_port",
+      "name": "Bind Privileged Port",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "advanced": true,
+      "description": "Allow service to bind to privileged ports (e.g., 80, 443) by setting CAP_NET_BIND_SERVICE capability"
     }
   ],
   "commands": [
