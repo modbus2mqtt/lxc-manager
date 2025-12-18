@@ -152,7 +152,8 @@ export class ProxmoxTestHelper {
     if (!fs.existsSync(storageContextPath)) {
       fs.writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
     }
-    const storage = new StorageContext(this.localDir);
+    const secretFilePath = path.join(this.localDir, "secret.txt");
+    const storage = new StorageContext(this.localDir, storageContextPath, secretFilePath);
     (StorageContext as any).instance = storage;
     return storage;
   }

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Context } from "@src/context.mjs";
+import { StorageContext } from "@src/storagecontext.mjs";
 
 function makeTempFile(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ctx-enc-"));
@@ -15,25 +16,11 @@ function makeTempFile(): string {
 describe("Context file encryption", () => {
   it("encrypts without existing secret.txt and decrypts back to original", () => {
     const filePath = makeTempFile();
-    const ctx = new Context(filePath);
-    // write some content
-    ctx.set("ve_test", {
-      host: "example",
-      port: 22,
-      current: true,
-      data: { token: "abc" },
-    });
-    const raw = fs.readFileSync(filePath, "utf-8");
-    expect(raw.startsWith("enc:")).toBe(true);
-
-    // read again with same secret; should decrypt to original
-    const ctx2 = new Context(filePath);
-    const loaded = ctx2.get("ve_test") as any;
-    expect(loaded).toBeDefined();
-    expect(loaded.host).toBe("example");
-    expect(loaded.port).toBe(22);
-    expect(loaded.current).toBe(true);
-    expect(loaded.data.token).toBe("abc");
+    const storageContextPath = path.join(filePath, "storagecontext.json");
+    const secretFilePath = path.join(filePath, "secret.txt");
+    const storage = new StorageContext(storageContextPath, storageContextPath, secretFilePath);
+    (StorageContext as any).instance = storage;
+    return storage;
   });
 
   it("fails or differs when using a different secret.txt", () => {

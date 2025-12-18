@@ -6,17 +6,21 @@ import { mkdirSync } from "fs";
 export class Context {
   private context: Record<string, any> = {};
   private secretFilePath: string;
-
-  constructor(secretFilePath: string) {
+  private storageContextFilePath: string; // path to the storage context file (storagecontext.json) that contains the context for the storage context (e.g. vm, ve, etc.) of the application
+  constructor(storageContextFilePath: string, secretFilePath: string) {
+    this.storageContextFilePath = storageContextFilePath;
     this.secretFilePath = secretFilePath;
-
-    if (!existsSync(path.dirname(this.secretFilePath))) {
-      mkdirSync(path.dirname(this.secretFilePath), { recursive: true });
-    }
-    if (existsSync(secretFilePath)) {
-      const raw = readFileSync(secretFilePath, "utf-8");
+    this.readContextFromFile();
+  }
+  private readContextFromFile(): void {
+    try {
+      const raw = readFileSync(this.storageContextFilePath, "utf-8");
       const jsonText = raw.startsWith("enc:") ? this.decrypt(raw) : raw;
       this.context = JSON.parse(jsonText);
+    } catch (err: any) {
+      console.log("No context file found, creating empty context");
+      this.context = {};
+      this.writeAll();  
     }
   }
   set(key: string, value: any): void {
@@ -86,7 +90,11 @@ export class Context {
     } catch {}
     const key = randomBytes(32);
     try {
-      // ensure base dir exists (dirname of filePath already exists by construction)
+      // Ensure base directory exists before writing the secret file
+      const secretDir = path.dirname(secretPath);
+      if (!existsSync(secretDir)) {
+        mkdirSync(secretDir, { recursive: true });
+      }
       writeFileSync(secretPath, key.toString("base64"), "utf-8");
     } catch {}
     return key;
@@ -106,16 +114,20 @@ export class Context {
   }
 
   decrypt(encText: string): string {
-    const pref = encText.startsWith("enc:") ? encText.slice(4) : encText;
-    const buf = Buffer.from(pref, "base64");
-    const iv = buf.subarray(0, 12);
-    const tag = buf.subarray(12, 28);
-    const data = buf.subarray(28);
-    const key = this.readOrCreateSecret();
-    const decipher = createDecipheriv("aes-256-gcm", key, iv);
-    decipher.setAuthTag(tag);
-    const dec = Buffer.concat([decipher.update(data), decipher.final()]);
-    return dec.toString("utf8");
+    try {
+      const pref = encText.startsWith("enc:") ? encText.slice(4) : encText;
+      const buf = Buffer.from(pref, "base64");
+      const iv = buf.subarray(0, 12);
+      const tag = buf.subarray(12, 28);
+      const data = buf.subarray(28);
+      const key = this.readOrCreateSecret();
+      const decipher = createDecipheriv("aes-256-gcm", key, iv);
+      decipher.setAuthTag(tag);
+      const dec = Buffer.concat([decipher.update(data), decipher.final()]);
+      return dec.toString("utf8");
+    } catch (err: any) {
+      throw new Error(`Failed to decrypt data: ${err?.message || String(err)}`);
+    }
   }
 
   isEncrypted(val: unknown): boolean {
@@ -124,7 +136,11 @@ export class Context {
 
   decryptIfEncrypted<T = unknown>(val: T): T | string {
     if (typeof val === "string" && this.isEncrypted(val)) {
-      return this.decrypt(val);
+      try {
+        return this.decrypt(val);
+      } catch (err: any) {
+        throw new Error(`Failed to decrypt encrypted value: ${err?.message || String(err)}`);
+      }
     }
     return val;
   }
@@ -161,7 +177,7 @@ export class Context {
     try {
       const json = JSON.stringify(this.context, null, 2);
       const enc = this.encrypt(json);
-      writeFileSync(this.secretFilePath, enc, "utf-8");
+      writeFileSync(this.storageContextFilePath, enc, "utf-8");
     } catch {}
   }
 }

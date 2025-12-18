@@ -52,9 +52,8 @@ class VEContext implements IVEContext {
 }
 export class StorageContext extends Context implements IContext {
   static instance: StorageContext | undefined;
-  static setInstance(localPath: string, secretsFilePath?: string): StorageContext {
-    const secretFilePath = secretsFilePath || join(localPath, "secret.txt");
-    StorageContext.instance = new StorageContext(localPath, secretFilePath);
+  static setInstance(localPath: string, storageContextFilePath: string, secretFilePath: string): StorageContext {
+    StorageContext.instance = new StorageContext(localPath, storageContextFilePath, secretFilePath);
     return StorageContext.instance;
   }
   static getInstance(): StorageContext {
@@ -70,8 +69,8 @@ export class StorageContext extends Context implements IContext {
   private jsonPath: string;
   private schemaPath: string;
   private pathes: IConfiguredPathes;
-  constructor(localPath: string, secretFilePath: string = join(localPath, "storagecontext.json")) {
-    super(secretFilePath);
+  constructor(localPath: string, storageContextFilePath: string,secretFilePath: string ) {
+    super(storageContextFilePath, secretFilePath);
     const rootDirname = join(dirname(fileURLToPath(import.meta.url)), "../..");
     this.pathes = {
       localPath: localPath,

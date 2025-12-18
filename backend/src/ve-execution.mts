@@ -137,10 +137,15 @@ export class VeExecution extends EventEmitter {
     let proc;
     let retryCount = 0;
     
+    // Prepend a unique marker before the input to easily identify where the actual output starts
+    // This helps strip SSH banners and MOTD messages that appear before command output
+    const UNIQUE_MARKER = "LXC_MANAGER_JSON_START_MARKER_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    const inputWithMarker = `echo "${UNIQUE_MARKER}"\n${input}`;
+    
     while (retryCount < maxRetries) {
       proc = await spawnAsync(sshCommand, sshArgs, {
         timeout: timeoutMs,
-        input,
+        input: inputWithMarker,
       });
       
       // Exit 255 = SSH or lxc-attach connection issue, always retry
@@ -194,17 +199,16 @@ export class VeExecution extends EventEmitter {
       }
 
       try {
-        // Some systems print login banners before command output. Strip leading banner text.
+        // Strip banner text by finding the unique marker we prepended
+        // Everything before the marker is banner text (SSH MOTD, etc.)
         let cleaned = stdout.trim();
-        const firstJsonIdx = Math.min(
-          ...["{", "["].map((c) => {
-            const i = cleaned.indexOf(c);
-            return i === -1 ? Number.POSITIVE_INFINITY : i;
-          }),
-        );
-        if (Number.isFinite(firstJsonIdx) && firstJsonIdx > 0) {
-          cleaned = cleaned.slice(firstJsonIdx);
+        const markerIndex = cleaned.indexOf(UNIQUE_MARKER);
+        
+        if (markerIndex >= 0) {
+          // Remove everything up to and including the marker and the newline after it
+          cleaned = cleaned.slice(markerIndex + UNIQUE_MARKER.length).trim();
         }
+        
         if(cleaned.length != 0) {
           const parsed = JSON.parse(cleaned);
           // Validate against schema; may be one of:
@@ -584,19 +588,27 @@ export class VeExecution extends EventEmitter {
 
   /**
    * Processes a value: if it's a string starting with "local:", reads the file and returns base64 encoded content.
+   * Only processes files when executing locally (sshCommand !== "ssh"). When executing on VE host,
+   * the "local:" prefix is preserved so the file can be read on the VE host.
    */
   private processLocalFileValue(value: string | number | boolean): string | number | boolean {
     if (typeof value === 'string' && value.startsWith('local:')) {
-      const filePath = value.substring(6); // Remove "local:" prefix
-      const storageContext = StorageContext.getInstance();
-      const localPath = storageContext.getLocalPath();
-      const fullPath = path.join(localPath, filePath);
-      try {
-        const fileContent = fs.readFileSync(fullPath);
-        return fileContent.toString('base64');
-      } catch (err: any) {
-        throw new Error(`Failed to read file ${fullPath}: ${err.message}`);
+      // Only process local files when executing locally (e.g., in tests)
+      // When executing on VE host, preserve the "local:" prefix so the file can be read on the VE host
+      if (this.sshCommand !== "ssh") {
+        const filePath = value.substring(6); // Remove "local:" prefix
+        const storageContext = StorageContext.getInstance();
+        const localPath = storageContext.getLocalPath();
+        const fullPath = path.join(localPath, filePath);
+        try {
+          const fileContent = fs.readFileSync(fullPath);
+          return fileContent.toString('base64');
+        } catch (err: any) {
+          throw new Error(`Failed to read file ${fullPath}: ${err.message}`);
+        }
       }
+      // When executing on VE host, return the value as-is (with "local:" prefix)
+      // The file will be read on the VE host, not locally
     }
     return value;
   }

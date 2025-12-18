@@ -12,7 +12,9 @@ declare module "@tests/ve-test-helper.mjs" {
 ProxmoxTestHelper.prototype.createStorageContext = function () {
   const localPath = path.join(__dirname, "../local/json");
   // Constructor expects (localPath, jsonPath, schemaPath)
-  const storage = new StorageContext(localPath);
+  const storageContextFilePath = path.join(localPath, "storagecontext.json");
+  const secretFilePath = path.join(localPath, "secret.txt");
+  const storage = new StorageContext(localPath, storageContextFilePath, secretFilePath);
   (StorageContext as any).instance = storage;
   return storage;
 };

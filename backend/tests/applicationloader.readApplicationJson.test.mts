@@ -9,7 +9,9 @@ const localPath = path.join(tmpDir, "local");
 const jsonPath = path.join(tmpDir, "json");
 const schemaPath = path.join(__dirname, "../schemas");
 
-StorageContext.setInstance(localPath);
+const storageContextFilePath = path.join(localPath, "storagecontext.json");
+const secretFilePath = path.join(localPath, "secret.txt");
+StorageContext.setInstance(localPath, storageContextFilePath, secretFilePath);
 
 function writeJson(filePath: string, data: any) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });

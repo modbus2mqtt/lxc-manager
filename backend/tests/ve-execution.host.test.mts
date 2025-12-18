@@ -17,7 +17,9 @@ describe("VeExecution host: flow", () => {
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
     if (!fs.existsSync(path.join(tmpDir, "local")))
       fs.mkdirSync(path.join(tmpDir, "local"), { recursive: true });
-    StorageContext.setInstance(tmpDir);
+    const storageContextFilePath = path.join(tmpDir, "storagecontext.json");
+    const secretFilePath = path.join(tmpDir, "secret.txt");
+    StorageContext.setInstance(tmpDir, storageContextFilePath, secretFilePath);
   });
 
   it("calls write-vmids-json.sh and then runs on matching LXC", async () => {
@@ -28,7 +30,6 @@ describe("VeExecution host: flow", () => {
       vekey: "ve_localhost",
       data: { hostname: "apphost", pve: "pve-1" },
     } as any);
-
     const command: ICommand = {
       name: "deploy",
       command: "echo 'hello'",

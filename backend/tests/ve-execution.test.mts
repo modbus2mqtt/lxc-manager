@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeAll, afterAll } from "vitest";
 import { VeExecution } from "@src/ve-execution.mjs";
 import { ICommand, IVeExecuteMessage } from "@src/types.mjs";
 import fs from "node:fs";
@@ -23,7 +23,7 @@ beforeAll(() => {
   const storageContextPath = path.join(testDir, "storagecontext.json");
   fs.writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
 
-  StorageContext.setInstance(testDir, secretFilePath);
+  StorageContext.setInstance(testDir, storageContextPath, secretFilePath);
 });
 
 afterAll(() => {
@@ -141,7 +141,7 @@ describe("VeExecution", () => {
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
         this.lastCommand = input;
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
     const commands: ICommand[] = [
@@ -171,7 +171,7 @@ describe("VeExecution", () => {
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
         resultValue = input;
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
     const commands: ICommand[] = [
@@ -194,7 +194,7 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
     const commands: ICommand[] = [
@@ -238,7 +238,7 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
     const commands: ICommand[] = [
@@ -321,7 +321,7 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
     const commands: ICommand[] = [
@@ -356,7 +356,7 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
     const commands: ICommand[] = [
@@ -384,7 +384,7 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
     const commands: ICommand[] = [
@@ -494,7 +494,7 @@ describe("VeExecution", () => {
 
     // Set StorageContext to use the test directory
     const secretFilePath = path.join(testDir, "secret.txt");
-    StorageContext.setInstance(testDir, secretFilePath);
+    StorageContext.setInstance(testDir, storageContextPath, secretFilePath);
 
     const commands: ICommand[] = [
       {
@@ -513,7 +513,7 @@ describe("VeExecution", () => {
       ): Promise<IVeExecuteMessage> {
         // Use sh -c as remoteCommand to execute locally
         // sshCommand is "sh", so remoteCommand should be ["-c", input] to pass command as argument
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
 
@@ -565,7 +565,7 @@ describe("VeExecution", () => {
 
     // Set StorageContext to use the test directory
     const secretFilePath = path.join(testDir, "secret.txt");
-    StorageContext.setInstance(testDir, secretFilePath);
+    StorageContext.setInstance(testDir, storageContextPath, secretFilePath);
 
     const commands: ICommand[] = [
       {
@@ -584,7 +584,7 @@ describe("VeExecution", () => {
       ): Promise<IVeExecuteMessage> {
         // Use sh -c as remoteCommand to execute locally
         // sshCommand is "sh", so remoteCommand should be ["-c", input] to pass command as argument
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, ["-c", input]);
+        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
       }
     }
 
@@ -606,12 +606,14 @@ describe("VeExecution", () => {
     expect(decodedBuffer.length).toBe(256);
     expect(decodedBuffer.equals(binaryData)).toBe(true);
 
-    // Verify outputsRaw is also set correctly
-    expect(exec.outputsRaw).toBeDefined();
-    expect(Array.isArray(exec.outputsRaw)).toBe(true);
-    expect(exec.outputsRaw!.length).toBe(1);
-    expect(exec.outputsRaw![0].name).toBe("testfile");
-    expect(exec.outputsRaw![0].value).toBe(outputValue);
+    // Verify outputsRaw is also set correctly (accessing private field directly)
+    const outputsRaw = (exec as any).outputsRaw;
+    expect(outputsRaw).toBeDefined();
+    expect(Array.isArray(outputsRaw)).toBe(true);
+    expect(outputsRaw!.length).toBe(1);
+    expect(outputsRaw![0].name).toBe("testfile");
+    expect(outputsRaw![0].value).toBe(outputValue);
+
 
     // Cleanup
     try {
