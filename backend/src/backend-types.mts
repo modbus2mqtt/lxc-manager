@@ -62,6 +62,7 @@ export type IApplicationSchema = IApplicationBase & {
 export interface IApplication extends IApplicationSchema {
   id: string;
   iconContent?: string | undefined;
+  iconType?: string | undefined;
 }
 export interface IReadApplicationOptions {
   applicationHierarchy: string[];

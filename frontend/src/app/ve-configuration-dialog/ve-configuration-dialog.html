@@ -1,7 +1,7 @@
 
 <div class="dialog-header">
 	@if (data.app.iconContent) {
-		<img class="app-icon" [src]="'data:image/png;base64,' + data.app.iconContent" alt="App Icon" />
+		<img class="app-icon" [src]="'data:' + (data.app.iconType || 'image/png') + ';base64,' + data.app.iconContent" alt="App Icon" />
 	}
 	<div class="header-text">
 		<h2>Configuration for {{ data.app.name }}</h2>
@@ -89,7 +89,7 @@
 				}
 			</div>
 			@if (hasAdvancedParams()) {
-				<div class="advanced-toggle" (click)="toggleAdvanced()">
+				<div class="advanced-toggle" (click)="toggleAdvanced()" (keyup.enter)="toggleAdvanced()" (keyup.space)="toggleAdvanced()" tabindex="0" role="button" [attr.aria-expanded]="showAdvanced()">
 					<span class="toggle-icon">{{ showAdvanced() ? '▼' : '▶' }}</span>
 					<span class="toggle-text">{{ showAdvanced() ? 'Hide' : 'Show' }} Advanced Options</span>
 				</div>

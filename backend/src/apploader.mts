@@ -16,6 +16,9 @@ export interface IReadApplicationOptions {
     task: string;
     templates: (ITemplateReference | string)[];
   }[];
+  inheritedIcon?: string;
+  inheritedIconContent?: string;
+  inheritedIconType?: string;
 }
 export class ApplicationLoader {
   constructor(
@@ -79,15 +82,7 @@ export class ApplicationLoader {
         "application",
       );
       appData.id = appName;
-      // Check for icon.png in the application directory
-      let icon = appData?.icon ? appData.icon : "icon.png";
-      if (appPath) {
-        const iconPath = path.join(appPath, icon);
-        if (fs.existsSync(iconPath)) {
-          appData.icon = icon;
-          appData.iconContent = fs.readFileSync(iconPath, { encoding: "base64" });
-        }
-      }
+      
       // Save the first application in the hierarchy
       if (!opts.application) {
         opts.application = appData;
@@ -96,7 +91,7 @@ export class ApplicationLoader {
       // First application is first in hierarchy
       opts.applicationHierarchy.push(appPath);
 
-      // Recursive inheritance
+      // Recursive inheritance - load parent first to get icon data
       if (appData.extends) {
         try {
           this.readApplicationJson(appData.extends, opts);
@@ -105,6 +100,32 @@ export class ApplicationLoader {
             opts.error.details.push(e);
           }
         }
+      }
+      
+      // Check for icon in the application directory (supports .png and .svg)
+      let icon = appData?.icon ? appData.icon : "icon.png";
+      let iconFound = false;
+      if (appPath) {
+        const iconPath = path.join(appPath, icon);
+        if (fs.existsSync(iconPath)) {
+          appData.icon = icon;
+          appData.iconContent = fs.readFileSync(iconPath, { encoding: "base64" });
+          // Determine MIME type based on file extension
+          const ext = path.extname(icon).toLowerCase();
+          appData.iconType = ext === ".svg" ? "image/svg+xml" : "image/png";
+          iconFound = true;
+          // Store icon data for inheritance
+          opts.inheritedIcon = icon;
+          opts.inheritedIconContent = appData.iconContent;
+          opts.inheritedIconType = appData.iconType;
+        }
+      }
+      
+      // If no icon found and we have inherited icon data from parent, use it
+      if (!iconFound && opts.inheritedIconContent) {
+        appData.icon = opts.inheritedIcon || "icon.png";
+        appData.iconContent = opts.inheritedIconContent;
+        appData.iconType = opts.inheritedIconType;
       }
       this.processTemplates(appData, opts);
       return appData;

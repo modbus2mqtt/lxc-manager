@@ -1,7 +1,7 @@
 {
   "name": "MariaDB",
   "description": "MariaDB database server",
-  "icon": "icon.png",
+  "icon": "icon.svg",
   "installation": [
     "set-parameters.json",
     "010-get-latest-os-template.json",

@@ -1,0 +1,10 @@
+{
+  "execute_on": "lxc",
+  "name": "Start lighttpd service",
+  "description": "Start and enable lighttpd service",
+  "commands": [
+    {
+      "command": "rc-service lighttpd start >&2 && rc-update add lighttpd default >&2"
+    }
+  ]
+}

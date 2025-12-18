@@ -1,6 +1,6 @@
 {
-  "name": "Node-RED",
-  "description": "Node-RED is a flow-based programming tool for wiring together hardware devices, APIs and online services",
+  "name": "phpMyAdmin",
+  "description": "phpMyAdmin - web-based MySQL/MariaDB administration tool",
   "icon": "icon.svg",
   "installation": [
     "set-parameters.json",
@@ -8,9 +8,10 @@
     "100-create-lxc.json",
     "200-start-lxc.json",
     "210-wait-for-container-ready.json",
+    "320-enable-community-packages.json",
     "330-install-apk-package.json",
-    "340-install-node-application.json",
-    "350-create-openrc-service.json"
+    "400-configure-lighttpd.json",
+    "410-configure-phpmyadmin.json",
+    "420-start-services.json"
   ]
 }
-

@@ -1,0 +1,30 @@
+{
+  "execute_on": "lxc",
+  "name": "Configure phpMyAdmin",
+  "description": "Configure phpMyAdmin permissions, symlink, cookie encryption key and MariaDB connection",
+  "parameters": [
+    {
+      "id": "db_host",
+      "name": "MariaDB Host",
+      "type": "string",
+      "default": "mariadb",
+      "required": true,
+      "advanced": true,
+      "description": "Hostname or IP address of the MariaDB server"
+    },
+    {
+      "id": "db_port",
+      "name": "MariaDB Port",
+      "type": "string",
+      "required": false,
+      "advanced": true,
+      "description": "Port number of the MariaDB server"
+    }
+  ],
+  "commands": [
+    {
+      "script": "configure-phpmyadmin.sh",
+      "description": "Set permissions, create symlink, generate cookie encryption key and configure MariaDB connection"
+    }
+  ]
+}

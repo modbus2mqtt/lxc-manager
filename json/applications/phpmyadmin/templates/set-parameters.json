@@ -1,0 +1,24 @@
+{
+  "execute_on": "ve",
+  "name": "MyPhpAdmin Parameters",
+  "description": "Set application-specific parameters for phpMyAdmin",
+  "parameters": [
+    {
+      "id": "hostname",
+      "name": "Hostname",
+      "type": "string",
+      "default": "phpmyadmin",
+      "required": true,
+      "description": "Hostname for the phpMyAdmin container"
+    }
+  ],
+  "commands": [
+    {
+      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"lighttpd php fcgi php-cgi phpmyadmin\"}]'"
+    }
+  ],
+  "outputs": [
+    { "id": "ostype" },
+    { "id": "packages" }
+  ]
+}

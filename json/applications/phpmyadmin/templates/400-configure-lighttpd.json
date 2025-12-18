@@ -1,0 +1,11 @@
+{
+  "execute_on": "lxc",
+  "name": "Configure Lighttpd",
+  "description": "Configure lighttpd to enable FastCGI support",
+  "commands": [
+    {
+      "script": "configure-lighttpd.sh",
+      "description": "Enable mod_fastcgi in lighttpd configuration"
+    }
+  ]
+}

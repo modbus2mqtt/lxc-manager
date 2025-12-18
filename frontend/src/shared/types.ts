@@ -22,6 +22,7 @@ export interface IApplicationWeb {
   description: string;
   icon?: string | undefined;
   iconContent?: string | undefined;
+  iconType?: string | undefined;
   id: string;
   errors?: IJsonError[];
 }

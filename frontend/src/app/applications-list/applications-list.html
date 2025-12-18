@@ -11,7 +11,7 @@
 				<div class="card-header">
 					@if (app.iconContent) {
 						<div class="icon-wrapper">
-							<img [src]="'data:image/png;base64,' + app.iconContent" [alt]="app.name + ' Icon'" />
+							<img [src]="'data:' + (app.iconType || 'image/png') + ';base64,' + app.iconContent" [alt]="app.name + ' Icon'" />
 						</div>
 					}
 					<div class="header-info">

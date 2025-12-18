@@ -1,0 +1,22 @@
+[
+  {
+    "name": "hostname",
+    "value": "phpmyadmin"
+  },
+  {
+    "name": "disk_size",
+    "value": "4"
+  },
+  {
+    "name": "memory",
+    "value": 512
+  },
+  {
+    "name": "bridge",
+    "value": "vmbr0"
+  },
+  {
+    "name": "db_host",
+    "value": "mariadb"
+  }
+]
