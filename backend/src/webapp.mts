@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import express from "express";
 import {
   TaskType,
@@ -317,35 +316,3 @@ export class VEWebApp {
   }
 }
 
-// If run directly, start the server
-if (
-  import.meta.url === process.argv[1] ||
-  import.meta.url === `file://${process.argv[1]}`
-) {
-  // Do NOT change working directory; respect caller's CWD.
-  // Support --local <dir> CLI option to set the local directory
-  // Default is './local' relative to current working directory
-  const argv = process.argv.slice(2);
-  let localDir: string | undefined;
-  const localIdx = argv.indexOf("--local");
-  if (localIdx !== -1) {
-    const candidateArg = argv[localIdx + 1] || "";
-    const candidate = String(candidateArg);
-    if (candidate.length > 0) {
-      localDir = path.isAbsolute(candidate)
-        ? candidate
-        : path.join(process.cwd(), candidate);
-    }
-  }
-  if (!localDir) {
-    localDir = path.join(process.cwd(), "local");
-  }
-
-  // Initialize StorageContext with absolute paths to avoid CWD-dependency
-  StorageContext.setInstance(localDir);
-  const webApp = new VEWebApp(StorageContext.getInstance());
-  const port = process.env.PORT || 3000;
-  webApp.httpServer.listen(port, () => {
-    console.log(`VEWebApp listening on port ${port}`);
-  });
-}

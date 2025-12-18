@@ -18,10 +18,11 @@
         },
         {
             "name": "Launch Web Server",
-            "program": "${workspaceFolder}/dist/webapp.mjs",
+            "program": "${workspaceFolder}/dist/lxc-manager.mjs",
             "preLaunchTask": "npm: build",
             "request": "launch",
             "sourceMaps": true,
+            "cwd": "${workspaceFolder}",
             "trace": true,
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.mjs",

@@ -5,16 +5,16 @@ import { mkdirSync } from "fs";
 
 export class Context {
   private context: Record<string, any> = {};
-  private filePath: string;
+  private secretFilePath: string;
 
-  constructor(filePath: string) {
-    this.filePath = filePath;
+  constructor(secretFilePath: string) {
+    this.secretFilePath = secretFilePath;
 
-    if (!existsSync(path.dirname(this.filePath))) {
-      mkdirSync(path.dirname(this.filePath), { recursive: true });
+    if (!existsSync(path.dirname(this.secretFilePath))) {
+      mkdirSync(path.dirname(this.secretFilePath), { recursive: true });
     }
-    if (existsSync(filePath)) {
-      const raw = readFileSync(filePath, "utf-8");
+    if (existsSync(secretFilePath)) {
+      const raw = readFileSync(secretFilePath, "utf-8");
       const jsonText = raw.startsWith("enc:") ? this.decrypt(raw) : raw;
       this.context = JSON.parse(jsonText);
     }
@@ -68,7 +68,7 @@ export class Context {
 
   // ===== Encryption / Decryption helpers (used by StorageContext and consumers) =====
   private getSecretFilePath(): string {
-    const baseDir = path.dirname(this.filePath);
+    const baseDir = path.dirname(this.secretFilePath);
     return path.join(baseDir, "secret.txt");
   }
 
@@ -161,7 +161,7 @@ export class Context {
     try {
       const json = JSON.stringify(this.context, null, 2);
       const enc = this.encrypt(json);
-      writeFileSync(this.filePath, enc, "utf-8");
+      writeFileSync(this.secretFilePath, enc, "utf-8");
     } catch {}
   }
 }

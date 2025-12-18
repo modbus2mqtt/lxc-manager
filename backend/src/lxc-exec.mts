@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { IRestartInfo, VeExecution } from "./ve-execution.mjs";
 // Make sure the types file exists, or update the path if necessary
 // If your types are in a TypeScript file, use './types' instead of './types.js'
@@ -11,7 +10,7 @@ import { TemplateProcessor } from "@src/templateprocessor.mjs";
 import { promises, writeFileSync } from "node:fs";
 import { StorageContext } from "./storagecontext.mjs";
 function printUsageAndExit() {
-  console.error("Usage: lxc-exec <application> <task> <parameters.json>");
+  console.error("Usage: lxc-exec <application> <task> <parameters.json> [--local <path>] [--secretsFilePath <path>] [--restartInfoFile <path>]");
 }
 function saveRestartInfo(
   restartInfo: IRestartInfo | undefined,
@@ -29,16 +28,14 @@ function saveRestartInfo(
   }
 }
 
-async function main() {
-  const [, , applicationArg, taskArg, paramsFileArg, restartInfoArg] =
-    process.argv;
-  if (!applicationArg || !taskArg) {
-    printUsageAndExit();
-    process.exit(1);
-  }
-  const application = String(applicationArg);
-  const task = String(taskArg) as TaskType;
-  const paramsFile = paramsFileArg ? String(paramsFileArg) : undefined;
+export async function exec(
+  application: string,
+  task: TaskType,
+  paramsFile: string,
+  restartInfoFile?: string,
+  localPath?: string,
+  secretsFilePath?: string,
+): Promise<void> {
   let restartInfo: IRestartInfo | null = null;
 
   try {
@@ -47,9 +44,9 @@ async function main() {
     const projectRoot = path.resolve(__dirname, "..");
     const schemaPath = path.join(projectRoot, "schemas");
     const jsonPath = path.join(projectRoot, "json");
-    const localPath = path.join(projectRoot, "local/json");
+    const resolvedLocalPath = localPath || path.join(projectRoot, "local/json");
     JsonError.baseDir = projectRoot;
-    StorageContext.setInstance(localPath);
+    StorageContext.setInstance(resolvedLocalPath, secretsFilePath);
     // Get all apps (name -> path)
     const allApps = StorageContext.getInstance().getAllAppNames();
     const appPath = allApps.get(application);
@@ -63,7 +60,7 @@ async function main() {
     const templateProcessor = new TemplateProcessor({
       schemaPath,
       jsonPath,
-      localPath,
+      localPath: resolvedLocalPath,
     });
 
     if (!paramsFile) {
@@ -91,11 +88,11 @@ async function main() {
         value: "",
       }));
       console.error(JSON.stringify(paramTemplate, null, 2));
-      process.exit(0);
+      return;
     }
-    if (restartInfoArg) {
+    if (restartInfoFile) {
       try {
-        restartInfo = JSON.parse(readFileSync(restartInfoArg, "utf-8"));
+        restartInfo = JSON.parse(readFileSync(restartInfoFile, "utf-8"));
       } catch (e: Error | any) {
         console.error(
           "Failed to get restartInfo. Start from the beginning",
@@ -127,13 +124,13 @@ async function main() {
         defaults.set(param.name, param.default);
       }
     });
-    const exec = new VeExecution(
+    const execInstance = new VeExecution(
       loaded.commands,
       params,
       StorageContext.getInstance().getCurrentVEContext(),
       defaults,
     );
-    exec.on("message", (msg) => {
+    execInstance.on("message", (msg) => {
       console.error(`[${msg.command}] ${msg.stderr}`);
       if (msg.exitCode !== 0) {
         console.log("=================== ERROR ==================");
@@ -141,10 +138,9 @@ async function main() {
         console.error(`[${msg.commandtext}] ${msg.stderr}`);
       }
     });
-    const rcRestartInfo = await exec.run(restartInfo);
-    if (rcRestartInfo) saveRestartInfo(rcRestartInfo, restartInfoArg);
+    const rcRestartInfo = await execInstance.run(restartInfo);
+    if (rcRestartInfo) saveRestartInfo(rcRestartInfo, restartInfoFile);
     console.log("All tasks completed successfully.");
-    process.exit(0);
   } catch (err) {
     if (err instanceof JsonError) {
       console.error("Error:", err.message);
@@ -155,14 +151,14 @@ async function main() {
       } else {
         console.error("Error:", err);
       }
-      process.exit(2);
+      throw err;
     }
     if (err instanceof Error) {
       console.error("Error:", err.message);
     } else {
       console.error("Error:", err);
     }
-    process.exit(2);
+    throw err;
   }
 }
 function printDetails(details: any[], level = 1) {
@@ -193,4 +189,3 @@ function printDetails(details: any[], level = 1) {
   }
 }
 
-main();

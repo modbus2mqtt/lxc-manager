@@ -52,8 +52,9 @@ class VEContext implements IVEContext {
 }
 export class StorageContext extends Context implements IContext {
   static instance: StorageContext | undefined;
-  static setInstance(localPath: string): StorageContext {
-    StorageContext.instance = new StorageContext(localPath);
+  static setInstance(localPath: string, secretsFilePath?: string): StorageContext {
+    const secretFilePath = secretsFilePath || join(localPath, "secret.txt");
+    StorageContext.instance = new StorageContext(localPath, secretFilePath);
     return StorageContext.instance;
   }
   static getInstance(): StorageContext {
@@ -69,16 +70,16 @@ export class StorageContext extends Context implements IContext {
   private jsonPath: string;
   private schemaPath: string;
   private pathes: IConfiguredPathes;
-  constructor(localPath: string) {
-    super(join(localPath, "storagecontext.json"));
-    const backendDirname = join(dirname(fileURLToPath(import.meta.url)), "..");
+  constructor(localPath: string, secretFilePath: string = join(localPath, "storagecontext.json")) {
+    super(secretFilePath);
+    const rootDirname = join(dirname(fileURLToPath(import.meta.url)), "../..");
     this.pathes = {
       localPath: localPath,
-      jsonPath: path.join(backendDirname, "json"),
-      schemaPath: path.join(backendDirname, "schemas"),
+      jsonPath: path.join(rootDirname, "json"),
+      schemaPath: path.join(rootDirname, "schemas"),
     };
-    this.jsonPath = path.join(backendDirname, "json");
-    this.schemaPath = path.join(backendDirname, "schemas");
+    this.jsonPath = path.join(rootDirname, "json");
+    this.schemaPath = path.join(rootDirname, "schemas");
     this.jsonValidator = new JsonValidator(this.schemaPath, baseSchemas);
     this.loadContexts("vm", VMContext);
     this.loadContexts("ve", VEContext);
