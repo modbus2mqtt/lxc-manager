@@ -1,0 +1,83 @@
+{
+  "execute_on": "lxc",
+  "name": "Configure Mosquitto",
+  "description": "Configure Mosquitto MQTT broker with authentication settings",
+  "parameters": [
+    {
+      "id": "auth_mode",
+      "name": "Authentication Mode",
+      "type": "string",
+      "required": true,
+      "description": "Authentication mode: none, password, or certificate"
+    },
+    {
+      "id": "mqtt_port",
+      "name": "MQTT Port",
+      "type": "string",
+      "required": true,
+      "description": "Port number for MQTT"
+    },
+    {
+      "id": "mqtts_port",
+      "name": "MQTTS Port",
+      "type": "string",
+      "required": true,
+      "description": "Port number for MQTT over TLS"
+    },
+    {
+      "id": "username",
+      "name": "Username",
+      "type": "string",
+      "required": false,
+      "description": "Username for MQTT broker"
+    },
+    {
+      "id": "password",
+      "name": "Password",
+      "type": "string",
+      "required": false,
+      "description": "Password for MQTT broker"
+    },
+    {
+      "id": "bind_address",
+      "name": "Bind Address",
+      "type": "string",
+      "required": true,
+      "description": "IP address to bind to"
+    },
+    {
+      "id": "server_cert",
+      "name": "Server Certificate",
+      "type": "string",
+      "required": false,
+      "description": "Base64-encoded server certificate content"
+    },
+    {
+      "id": "server_key",
+      "name": "Server Private Key",
+      "type": "string",
+      "required": false,
+      "description": "Base64-encoded server private key content"
+    },
+    {
+      "id": "ca_cert",
+      "name": "CA Certificate",
+      "type": "string",
+      "required": false,
+      "description": "Base64-encoded CA certificate content"
+    },
+    {
+      "id": "ca_key",
+      "name": "CA Private Key",
+      "type": "string",
+      "required": false,
+      "description": "Base64-encoded CA private key content"
+    }
+  ],
+  "commands": [
+    {
+      "script": "configure-mosquitto.sh",
+      "description": "Configure Mosquitto with authentication settings"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import { spawn, SpawnOptionsWithoutStdio } from "node:child_process";
 function spawnAsync(
   cmd: string,
   args: string[],
-  options: SpawnOptionsWithoutStdio & { input?: string; timeout?: number }
+  options: SpawnOptionsWithoutStdio & { input?: string; timeout?: number },
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
     const proc = spawn(cmd, args, { ...options, stdio: "pipe" });
@@ -136,30 +136,36 @@ export class VeExecution extends EventEmitter {
     const maxRetries = 3;
     let proc;
     let retryCount = 0;
-    
+
     // Prepend a unique marker before the input to easily identify where the actual output starts
     // This helps strip SSH banners and MOTD messages that appear before command output
-    const UNIQUE_MARKER = "LXC_MANAGER_JSON_START_MARKER_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    const UNIQUE_MARKER =
+      "LXC_MANAGER_JSON_START_MARKER_" +
+      Date.now() +
+      "_" +
+      Math.random().toString(36).slice(2);
     const inputWithMarker = `echo "${UNIQUE_MARKER}"\n${input}`;
-    
+
     while (retryCount < maxRetries) {
       proc = await spawnAsync(sshCommand, sshArgs, {
         timeout: timeoutMs,
         input: inputWithMarker,
       });
-      
+
       // Exit 255 = SSH or lxc-attach connection issue, always retry
       if (proc.exitCode === 255) {
         retryCount++;
         if (retryCount < maxRetries) {
-          console.error(`Connection failed with exit 255 (attempt ${retryCount}/${maxRetries}), retrying in 3s...`);
-          await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3s before retry
+          console.error(
+            `Connection failed with exit 255 (attempt ${retryCount}/${maxRetries}), retrying in 3s...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 3000)); // wait 3s before retry
           continue;
         }
       }
       break;
     }
-    
+
     const stdout = proc!.stdout || "";
     const stderr = proc!.stderr || "";
     const exitCode = proc!.exitCode;
@@ -203,13 +209,13 @@ export class VeExecution extends EventEmitter {
         // Everything before the marker is banner text (SSH MOTD, etc.)
         let cleaned = stdout.trim();
         const markerIndex = cleaned.indexOf(UNIQUE_MARKER);
-        
+
         if (markerIndex >= 0) {
           // Remove everything up to and including the marker and the newline after it
           cleaned = cleaned.slice(markerIndex + UNIQUE_MARKER.length).trim();
         }
-        
-        if(cleaned.length != 0) {
+
+        if (cleaned.length != 0) {
           const parsed = JSON.parse(cleaned);
           // Validate against schema; may be one of:
           // - IOutput
@@ -220,7 +226,7 @@ export class VeExecution extends EventEmitter {
             "outputs",
             "Outputs " + tmplCommand.name,
           );
-  
+
           if (Array.isArray(outputsJson)) {
             const first = outputsJson[0];
             if (
@@ -231,7 +237,10 @@ export class VeExecution extends EventEmitter {
             ) {
               // name/value array: pass through 1:1 to outputsRaw and also map for substitutions
               this.outputsRaw = [];
-              for (const nv of outputsJson as { name: string; value: string | number | boolean }[]) {
+              for (const nv of outputsJson as {
+                name: string;
+                value: string | number | boolean;
+              }[]) {
                 const processedValue = this.processLocalFileValue(nv.value);
                 this.outputsRaw.push({ name: nv.name, value: processedValue });
                 this.outputs.set(nv.name, processedValue);
@@ -240,7 +249,9 @@ export class VeExecution extends EventEmitter {
               // Array of outputObject {id, value}
               for (const entry of outputsJson as IOutput[]) {
                 if (entry.value !== undefined) {
-                  const processedValue = this.processLocalFileValue(entry.value);
+                  const processedValue = this.processLocalFileValue(
+                    entry.value,
+                  );
                   this.outputs.set(entry.id, processedValue);
                 }
                 if ((entry as any).default !== undefined)
@@ -257,16 +268,15 @@ export class VeExecution extends EventEmitter {
               this.defaults.set(obj.id, (obj as any).default as any);
           }
         }
-
       } catch (e) {
         msg.index = index;
         msg.commandtext = stdout;
         msg.stderr = stderr;
         throw e;
       }
-    } catch (e:any)  {
+    } catch (e: any) {
       msg.index = index;
-      msg.error = new JsonError( e.message);
+      msg.error = new JsonError(e.message);
       msg.exitCode = -1;
       this.emit("message", msg);
       throw new Error("An error occurred during command execution.");
@@ -368,7 +378,9 @@ export class VeExecution extends EventEmitter {
    * Runs all commands, replacing variables from inputs/outputs, and executes them on the correct target.
    * Returns the index of the last successfully executed command.
    */
-  async run(restartInfo: IRestartInfo | null = null): Promise<IRestartInfo | undefined> {
+  async run(
+    restartInfo: IRestartInfo | null = null,
+  ): Promise<IRestartInfo | undefined> {
     let rcRestartInfo: IRestartInfo | undefined = undefined;
     let msgIndex = 0;
     let startIdx = 0;
@@ -532,21 +544,34 @@ export class VeExecution extends EventEmitter {
         // Set restartInfo even on error so restart is possible
         const vm_id = this.outputs.get("vm_id");
         rcRestartInfo = {
-          vm_id: vm_id !== undefined ? Number.parseInt(vm_id as string, 10) : undefined,
+          vm_id:
+            vm_id !== undefined
+              ? Number.parseInt(vm_id as string, 10)
+              : undefined,
           lastSuccessfull: i - 1,
-          inputs: Object.entries(this.inputs).map(([name, value]) => ({ name, value })),
-          outputs: this.outputsRaw && Array.isArray(this.outputsRaw)
-            ? this.outputsRaw.map(({ name, value }) => ({ name, value }))
-            : Array.from(this.outputs.entries()).map(([name, value]) => ({ name, value })),
-          defaults: Array.from(this.defaults.entries()).map(([name, value]) => ({ name, value })),
+          inputs: Object.entries(this.inputs).map(([name, value]) => ({
+            name,
+            value,
+          })),
+          outputs:
+            this.outputsRaw && Array.isArray(this.outputsRaw)
+              ? this.outputsRaw.map(({ name, value }) => ({ name, value }))
+              : Array.from(this.outputs.entries()).map(([name, value]) => ({
+                  name,
+                  value,
+                })),
+          defaults: Array.from(this.defaults.entries()).map(
+            ([name, value]) => ({ name, value }),
+          ),
         };
         break outerloop;
       }
     }
     // Check if all commands completed successfully
-    const allSuccessful = rcRestartInfo !== undefined && 
+    const allSuccessful =
+      rcRestartInfo !== undefined &&
       rcRestartInfo.lastSuccessfull === this.commands.length - 1;
-    
+
     if (allSuccessful) {
       // Send a final success message
       this.emit("message", {
@@ -557,7 +582,7 @@ export class VeExecution extends EventEmitter {
         stderr: "",
         finished: true,
       } as IVeExecuteMessage);
-      
+
       if (restartInfo == undefined) {
         this.emit("finished", this.buildVmContext());
       }
@@ -591,8 +616,10 @@ export class VeExecution extends EventEmitter {
    * Only processes files when executing locally (sshCommand !== "ssh"). When executing on VE host,
    * the "local:" prefix is preserved so the file can be read on the VE host.
    */
-  private processLocalFileValue(value: string | number | boolean): string | number | boolean {
-    if (typeof value === 'string' && value.startsWith('local:')) {
+  private processLocalFileValue(
+    value: string | number | boolean,
+  ): string | number | boolean {
+    if (typeof value === "string" && value.startsWith("local:")) {
       // Only process local files when executing locally (e.g., in tests)
       // When executing on VE host, preserve the "local:" prefix so the file can be read on the VE host
       if (this.sshCommand !== "ssh") {
@@ -602,7 +629,7 @@ export class VeExecution extends EventEmitter {
         const fullPath = path.join(localPath, filePath);
         try {
           const fileContent = fs.readFileSync(fullPath);
-          return fileContent.toString('base64');
+          return fileContent.toString("base64");
         } catch (err: any) {
           throw new Error(`Failed to read file ${fullPath}: ${err.message}`);
         }

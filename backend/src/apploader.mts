@@ -82,7 +82,7 @@ export class ApplicationLoader {
         "application",
       );
       appData.id = appName;
-      
+
       // Save the first application in the hierarchy
       if (!opts.application) {
         opts.application = appData;
@@ -101,7 +101,7 @@ export class ApplicationLoader {
           }
         }
       }
-      
+
       // Check for icon in the application directory (supports .png and .svg)
       let icon = appData?.icon ? appData.icon : "icon.png";
       let iconFound = false;
@@ -109,7 +109,9 @@ export class ApplicationLoader {
         const iconPath = path.join(appPath, icon);
         if (fs.existsSync(iconPath)) {
           appData.icon = icon;
-          appData.iconContent = fs.readFileSync(iconPath, { encoding: "base64" });
+          appData.iconContent = fs.readFileSync(iconPath, {
+            encoding: "base64",
+          });
           // Determine MIME type based on file extension
           const ext = path.extname(icon).toLowerCase();
           appData.iconType = ext === ".svg" ? "image/svg+xml" : "image/png";
@@ -120,7 +122,7 @@ export class ApplicationLoader {
           opts.inheritedIconType = appData.iconType;
         }
       }
-      
+
       // If no icon found and we have inherited icon data from parent, use it
       if (!iconFound && opts.inheritedIconContent) {
         appData.icon = opts.inheritedIcon || "icon.png";

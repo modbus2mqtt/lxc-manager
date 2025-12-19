@@ -11,19 +11,12 @@
       "description": "ID of the LXC container to which the disk will be mapped."
     },
     {
-      "id": "host_device_uuid",
-      "name": "UUID of the block device",
+      "id": "storage_selection",
+      "name": "Storage Selection",
       "type": "enum",
       "required": true,
-      "enumValuesTemplate": "map-disk-uuids.json",
-      "description": "UUID of the block device to be mounted."
-    },
-    {
-      "id": "disk_size",
-      "name": "Disk size",
-      "type": "string",
-      "required": true,
-      "description": "Disk size (for documentation/logging only, not used for mounting)."
+      "enumValuesTemplate": "list-available-storage.json",
+      "description": "Select storage to mount. Filesystems are prefixed with 'uuid:', ZFS pools with 'zfs:'."
     },
     {
       "id": "mountpoint",

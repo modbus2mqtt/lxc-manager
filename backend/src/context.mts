@@ -20,7 +20,7 @@ export class Context {
     } catch {
       console.log("No context file found, creating empty context");
       this.context = {};
-      this.writeAll();  
+      this.writeAll();
     }
   }
   set(key: string, value: any): void {
@@ -139,7 +139,9 @@ export class Context {
       try {
         return this.decrypt(val);
       } catch (err: any) {
-        throw new Error(`Failed to decrypt encrypted value: ${err?.message || String(err)}`);
+        throw new Error(
+          `Failed to decrypt encrypted value: ${err?.message || String(err)}`,
+        );
       }
     }
     return val;

@@ -1,0 +1,24 @@
+{
+  "execute_on": "ve",
+  "name": "Set Parameters",
+  "description": "Set application-specific parameters for Mac OS Time Machine Backup Server",
+  "parameters": [
+    {
+      "id": "hostname",
+      "name": "Hostname",
+      "type": "string",
+      "default": "macbckpsrv",
+      "required": true,
+      "description": "Hostname for the Mac OS Time Machine Backup Server container"
+    }
+  ],
+  "commands": [
+    {
+      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"hostname\",\"value\":\"{{hostname}}\"}]'"
+    }
+  ],
+  "outputs": [
+    { "id": "ostype" },
+    { "id": "hostname" }
+  ]
+}

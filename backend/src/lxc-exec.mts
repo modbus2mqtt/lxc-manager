@@ -10,7 +10,9 @@ import { TemplateProcessor } from "@src/templateprocessor.mjs";
 import { promises, writeFileSync } from "node:fs";
 import { StorageContext } from "./storagecontext.mjs";
 function printUsageAndExit() {
-  console.error("Usage: lxc-exec <application> <task> <parameters.json> [--local <path>] [--secretsFilePath <path>] [--restartInfoFile <path>]");
+  console.error(
+    "Usage: lxc-exec <application> <task> <parameters.json> [--local <path>] [--secretsFilePath <path>] [--restartInfoFile <path>]",
+  );
 }
 function saveRestartInfo(
   restartInfo: IRestartInfo | undefined,
@@ -46,10 +48,17 @@ export async function exec(
     const schemaPath = path.join(projectRoot, "schemas");
     const jsonPath = path.join(projectRoot, "json");
     const resolvedLocalPath = localPath || path.join(projectRoot, "local/json");
-    const resolvedStorageContextFilePath = storageContextFilePath || path.join(resolvedLocalPath, "storagecontext.json");
-    const resolvedSecretFilePath = secretsFilePath || path.join(resolvedLocalPath, "secret.txt");
+    const resolvedStorageContextFilePath =
+      storageContextFilePath ||
+      path.join(resolvedLocalPath, "storagecontext.json");
+    const resolvedSecretFilePath =
+      secretsFilePath || path.join(resolvedLocalPath, "secret.txt");
     JsonError.baseDir = projectRoot;
-    StorageContext.setInstance(resolvedLocalPath, resolvedStorageContextFilePath, resolvedSecretFilePath);
+    StorageContext.setInstance(
+      resolvedLocalPath,
+      resolvedStorageContextFilePath,
+      resolvedSecretFilePath,
+    );
     // Get all apps (name -> path)
     const allApps = StorageContext.getInstance().getAllAppNames();
     const appPath = allApps.get(application);
@@ -191,4 +200,3 @@ function printDetails(details: any[], level = 1) {
     }
   }
 }
-

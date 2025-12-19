@@ -14,7 +14,11 @@ ProxmoxTestHelper.prototype.createStorageContext = function () {
   // Constructor expects (localPath, jsonPath, schemaPath)
   const storageContextFilePath = path.join(localPath, "storagecontext.json");
   const secretFilePath = path.join(localPath, "secret.txt");
-  const storage = new StorageContext(localPath, storageContextFilePath, secretFilePath);
+  const storage = new StorageContext(
+    localPath,
+    storageContextFilePath,
+    secretFilePath,
+  );
   (StorageContext as any).instance = storage;
   return storage;
 };
@@ -46,12 +50,14 @@ describe("ProxmoxConfiguration.loadApplication", () => {
     const paramNames = result.parameters.map((p) => p.id);
     expect(paramNames).toContain("vm_id");
 
-    const unresolved = await templateProcessor
-      .getUnresolvedParameters("modbus2mqtt",
-      "installation",{ host: "localhost", port: 22 } as any);
+    const unresolved = await templateProcessor.getUnresolvedParameters(
+      "modbus2mqtt",
+      "installation",
+      { host: "localhost", port: 22 } as any,
+    );
     unresolved.forEach((param) => {
-        expect(param.id).not.toBe("ostype");
-      });
+      expect(param.id).not.toBe("ostype");
+    });
   });
 
   it("should throw error if a template file is missing and provide all errors and application object", async () => {

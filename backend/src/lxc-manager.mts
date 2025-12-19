@@ -19,7 +19,7 @@ interface ParsedArgs {
 function parseArgs(): ParsedArgs {
   const args: ParsedArgs = {};
   const argv = process.argv.slice(2);
-  
+
   let i = 0;
   while (i < argv.length) {
     const arg = argv[i];
@@ -27,7 +27,7 @@ function parseArgs(): ParsedArgs {
       i += 1;
       continue;
     }
-    
+
     if (arg === "--local") {
       const value = argv[i + 1];
       if (value && !value.startsWith("--")) {
@@ -95,7 +95,7 @@ function parseArgs(): ParsedArgs {
       i += 1;
     }
   }
-  
+
   return args;
 }
 
@@ -113,7 +113,11 @@ function isValidTaskType(task: string): task is TaskType {
   return VALID_TASK_TYPES.includes(task as TaskType);
 }
 
-async function startWebApp(localPath: string, storageContextPath: string, secretFilePath: string) {
+async function startWebApp(
+  localPath: string,
+  storageContextPath: string,
+  secretFilePath: string,
+) {
   StorageContext.setInstance(localPath, storageContextPath, secretFilePath);
   const webApp = new VEWebApp(StorageContext.getInstance());
   const port = process.env.PORT || 3000;
@@ -133,9 +137,12 @@ async function runExecCommand(
 ) {
   // Set default values for optional parameters
   const resolvedLocalPath = localPath || path.join(process.cwd(), "local");
-  const resolvedStorageContextFilePath = storageContextFilePath || path.join(resolvedLocalPath, "storagecontext.json");
-  const resolvedSecretFilePath = secretsFilePath || path.join(resolvedLocalPath, "secret.txt");
-  
+  const resolvedStorageContextFilePath =
+    storageContextFilePath ||
+    path.join(resolvedLocalPath, "storagecontext.json");
+  const resolvedSecretFilePath =
+    secretsFilePath || path.join(resolvedLocalPath, "secret.txt");
+
   await execCommand(
     application,
     task,
@@ -155,25 +162,45 @@ function printHelp() {
   console.log("");
   console.log("Commands:");
   console.log("  exec <application> <task> <parameters file>");
-  console.log("    Execute a task for a specific application in an LXC container");
+  console.log(
+    "    Execute a task for a specific application in an LXC container",
+  );
   console.log("");
   console.log("  (no command)");
   console.log("    Start the web application server");
   console.log("");
   console.log("Options:");
-  console.log("  --local <path>                    Path to the local data directory");
-  console.log("                                   For exec: default is 'local' in current working directory");
-  console.log("                                   For web app: default is 'examples' in current working directory");
-  console.log("                                   If --local is specified without a value, uses 'local'");
-  console.log("  --storageContextFilePath <path>   Path to the storage context file (storagecontext.json)");
-  console.log("                                   Default: <localPath>/storagecontext.json");
-  console.log("  --secretsFilePath <path>          Path to the secrets file for encryption/decryption");
-  console.log("                                   Default: <localPath>/secret.txt");
-  console.log("  --restartInfoFile <path>          Path to the restart info JSON file (exec command only)");
+  console.log(
+    "  --local <path>                    Path to the local data directory",
+  );
+  console.log(
+    "                                   For exec: default is 'local' in current working directory",
+  );
+  console.log(
+    "                                   For web app: default is 'examples' in current working directory",
+  );
+  console.log(
+    "                                   If --local is specified without a value, uses 'local'",
+  );
+  console.log(
+    "  --storageContextFilePath <path>   Path to the storage context file (storagecontext.json)",
+  );
+  console.log(
+    "                                   Default: <localPath>/storagecontext.json",
+  );
+  console.log(
+    "  --secretsFilePath <path>          Path to the secrets file for encryption/decryption",
+  );
+  console.log(
+    "                                   Default: <localPath>/secret.txt",
+  );
+  console.log(
+    "  --restartInfoFile <path>          Path to the restart info JSON file (exec command only)",
+  );
   console.log("  --help, -h                       Show this help message");
   console.log("");
   console.log("Task Types (for exec command):");
-  VALID_TASK_TYPES.forEach(task => {
+  VALID_TASK_TYPES.forEach((task) => {
     console.log(`  ${task}`);
   });
   console.log("");
@@ -184,63 +211,100 @@ function printHelp() {
   console.log("");
   console.log("  # Execute installation task");
   console.log("  lxc-manager exec node-red installation ./params.json");
-  console.log("  lxc-manager exec node-red installation ./params.json --local ./my-local");
+  console.log(
+    "  lxc-manager exec node-red installation ./params.json --local ./my-local",
+  );
   console.log("");
   console.log("  # Execute backup task with secrets");
-  console.log("  lxc-manager exec node-red backup ./backup-params.json --secretsFilePath ./secrets.txt");
+  console.log(
+    "  lxc-manager exec node-red backup ./backup-params.json --secretsFilePath ./secrets.txt",
+  );
 }
 
 async function main() {
   try {
     const argv = process.argv.slice(2);
-    
+
     // Check for help flag
     if (argv.includes("--help") || argv.includes("-h")) {
       printHelp();
       process.exit(0);
     }
-    
+
     const args = parseArgs();
-    
+
     // If no command, start webapp
     if (!args.command) {
       const localPath = args.localPath || path.join(process.cwd(), "examples");
-      const storageContextFilePath = args.storageContextFilePath || path.join(localPath, "storagecontext.json");
-      const secretFilePath = args.secretsFilePath || path.join(localPath, "secret.txt");
+      const storageContextFilePath =
+        args.storageContextFilePath ||
+        path.join(localPath, "storagecontext.json");
+      const secretFilePath =
+        args.secretsFilePath || path.join(localPath, "secret.txt");
       await startWebApp(localPath, storageContextFilePath, secretFilePath);
       return;
     }
-    
+
     // Handle commands
     if (args.command === "exec") {
       if (!args.application || !args.task || !args.parametersFile) {
-        console.error("Usage: lxc-manager exec <application> <task> <parameters file> [options]");
+        console.error(
+          "Usage: lxc-manager exec <application> <task> <parameters file> [options]",
+        );
         console.error("");
         console.error("Command: exec");
-        console.error("  Execute a task for a specific application in an LXC container.");
+        console.error(
+          "  Execute a task for a specific application in an LXC container.",
+        );
         console.error("");
         console.error("Arguments:");
-        console.error("  <application>     Name of the application to execute the task for");
-        console.error("  <task>            Task type to execute. Valid values:");
-        VALID_TASK_TYPES.forEach(task => {
+        console.error(
+          "  <application>     Name of the application to execute the task for",
+        );
+        console.error(
+          "  <task>            Task type to execute. Valid values:",
+        );
+        VALID_TASK_TYPES.forEach((task) => {
           console.error(`                     - ${task}`);
         });
-        console.error("  <parameters file> Path to the JSON file containing task parameters");
+        console.error(
+          "  <parameters file> Path to the JSON file containing task parameters",
+        );
         console.error("");
         console.error("Options:");
-        console.error("  --local <path>                    Path to the local data directory");
-        console.error("                                   (default: 'local' in current working directory)");
-        console.error("                                   If --local is specified without a value, uses 'local'");
-        console.error("  --storageContextFilePath <path>   Path to the storage context file (storagecontext.json)");
-        console.error("                                   (default: <localPath>/storagecontext.json)");
-        console.error("  --secretsFilePath <path>          Path to the secrets file for encryption/decryption");
-        console.error("                                   (default: <localPath>/secret.txt)");
-        console.error("  --restartInfoFile <path>          Path to the restart info JSON file");
+        console.error(
+          "  --local <path>                    Path to the local data directory",
+        );
+        console.error(
+          "                                   (default: 'local' in current working directory)",
+        );
+        console.error(
+          "                                   If --local is specified without a value, uses 'local'",
+        );
+        console.error(
+          "  --storageContextFilePath <path>   Path to the storage context file (storagecontext.json)",
+        );
+        console.error(
+          "                                   (default: <localPath>/storagecontext.json)",
+        );
+        console.error(
+          "  --secretsFilePath <path>          Path to the secrets file for encryption/decryption",
+        );
+        console.error(
+          "                                   (default: <localPath>/secret.txt)",
+        );
+        console.error(
+          "  --restartInfoFile <path>          Path to the restart info JSON file",
+        );
         console.error("");
         console.error("Examples:");
         console.error("  lxc-manager exec node-red installation ./params.json");
-        console.error("  lxc-manager exec node-red installation ./params.json --local ./my-local");
-        console.error("  lxc-manager exec node-red backup ./backup-params.json --secretsFilePath ./secrets.txt");
+        console.error(
+          "  lxc-manager exec node-red installation ./params.json --local ./my-local",
+        );
+        console.error(
+          "  lxc-manager exec node-red backup ./backup-params.json --secretsFilePath ./secrets.txt",
+        );
         process.exit(1);
       }
       if (!isValidTaskType(args.task)) {
@@ -268,12 +332,24 @@ async function main() {
       console.error("  lxc-manager [options]");
       console.error("");
       console.error("Options:");
-      console.error("  --local <path>                    Path to the local data directory");
-      console.error("                                   (default: 'examples' in current working directory)");
-      console.error("  --storageContextFilePath <path>   Path to the storage context file (storagecontext.json)");
-      console.error("                                   (default: <localPath>/storagecontext.json)");
-      console.error("  --secretsFilePath <path>          Path to the secrets file for encryption/decryption");
-      console.error("                                   (default: <localPath>/secret.txt)");
+      console.error(
+        "  --local <path>                    Path to the local data directory",
+      );
+      console.error(
+        "                                   (default: 'examples' in current working directory)",
+      );
+      console.error(
+        "  --storageContextFilePath <path>   Path to the storage context file (storagecontext.json)",
+      );
+      console.error(
+        "                                   (default: <localPath>/storagecontext.json)",
+      );
+      console.error(
+        "  --secretsFilePath <path>          Path to the secrets file for encryption/decryption",
+      );
+      console.error(
+        "                                   (default: <localPath>/secret.txt)",
+      );
       process.exit(1);
     }
   } catch (err: any) {

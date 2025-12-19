@@ -303,11 +303,8 @@ export class TemplateProcessor extends EventEmitter {
             );
             const rc = await ve.run(null);
             if (rc && Array.isArray(rc.outputs) && rc.outputs.length > 0) {
-              // If outputs is an array of {name, value}, map names as enum strings
-              const first = rc.outputs[0];
-              if (first && typeof first === "object" && "name" in first) {
-                pparm.enumValues = rc.outputs.map((o: { name: string; value: string | number | boolean }) => String(o.name));
-              }
+              // If outputs is an array of {name, value}, use it as enum values
+              pparm.enumValues = rc.outputs;
             }
           } catch (e: any) {
             const err =

@@ -18,7 +18,7 @@ beforeAll(() => {
   // Create a temporary directory for the test
   testDir = mkdtempSync(path.join(os.tmpdir(), "ve-execution-test-"));
   secretFilePath = path.join(testDir, "secret.txt");
-  
+
   // Create a valid storagecontext.json file
   const storageContextPath = path.join(testDir, "storagecontext.json");
   fs.writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
@@ -32,7 +32,7 @@ afterAll(() => {
     if (testDir && fs.existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true });
     }
-  } catch  {
+  } catch {
     // Ignore cleanup errors
   }
 });
@@ -141,7 +141,12 @@ describe("VeExecution", () => {
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
         this.lastCommand = input;
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
     const commands: ICommand[] = [
@@ -171,7 +176,12 @@ describe("VeExecution", () => {
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
         resultValue = input;
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
     const commands: ICommand[] = [
@@ -194,27 +204,32 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
     const commands: ICommand[] = [
       {
-        command: "echo '{\"id\": \"foo\", \"value\": \"bar\"}'",
+        command: 'echo \'{"id": "foo", "value": "bar"}\'',
         name: "test",
         execute_on: "ve",
       },
       {
-        command: "echo '{\"id\": \"baz\", \"value\": 99}'",
+        command: 'echo \'{"id": "baz", "value": 99}\'',
         name: "test",
         execute_on: "ve",
       },
       {
-        command: "echo '{\"id\": \"vm_id\", \"value\": 100}'",
+        command: 'echo \'{"id": "vm_id", "value": 100}\'',
         name: "test",
         execute_on: "ve",
       },
       {
-        command: "echo '{\"id\": \"foo\", \"value\": \"baz\"}'",
+        command: 'echo \'{"id": "foo", "value": "baz"}\'',
         name: "test",
         execute_on: "ve",
       },
@@ -238,17 +253,22 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
     const commands: ICommand[] = [
       {
-        command: "echo '{\"id\": \"foo\", \"value\": \"bar\"}'",
+        command: 'echo \'{"id": "foo", "value": "bar"}\'',
         name: "test",
         execute_on: "ve",
       },
       {
-        command: "echo '{\"id\": \"foo\", \"value\": \"baz99\"}'",
+        command: 'echo \'{"id": "foo", "value": "baz99"}\'',
         name: "test",
         execute_on: "ve",
       },
@@ -321,22 +341,27 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
     const commands: ICommand[] = [
       {
-        command: "echo '{\"id\": \"foo\", \"value\": \"bar\"}'",
+        command: 'echo \'{"id": "foo", "value": "bar"}\'',
         name: "test",
         execute_on: "ve",
       },
       {
-        command: "echo '{\"id\": \"foo\", \"value\": \"baz99\"}'",
+        command: 'echo \'{"id": "foo", "value": "baz99"}\'',
         name: "test",
         execute_on: "ve",
       },
       {
-        command: "echo '{\"id\": \"baz\", \"value\": 99}'",
+        command: 'echo \'{"id": "baz", "value": 99}\'',
         name: "test",
         execute_on: "ve",
       },
@@ -356,12 +381,17 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
     const commands: ICommand[] = [
       {
-        command: "echo '[{\"name\": \"foo\", \"value\": \"bar\"}]'",
+        command: 'echo \'[{"name": "foo", "value": "bar"}]\'',
         name: "emit-json",
         execute_on: "ve",
       },
@@ -384,12 +414,17 @@ describe("VeExecution", () => {
         timeoutMs = 300000,
         remoteCommand?: string[],
       ): Promise<IVeExecuteMessage> {
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
     const commands: ICommand[] = [
       {
-        command: "echo '{\"id\": \"vm_id\", \"value\": 123}'",
+        command: 'echo \'{"id": "vm_id", "value": 123}\'',
         name: "emit-vmid",
         execute_on: "ve",
       },
@@ -408,7 +443,10 @@ describe("VeExecution", () => {
   it("does not emit finished when a command fails", async () => {
     class FailingExec extends VeExecution {
       private called = false;
-      protected async runOnVeHost(command: string, tmplCommand: ICommand): Promise<IVeExecuteMessage> {
+      protected async runOnVeHost(
+        command: string,
+        tmplCommand: ICommand,
+      ): Promise<IVeExecuteMessage> {
         if (!this.called) {
           this.called = true;
           // Simulate failure by throwing
@@ -480,10 +518,12 @@ describe("VeExecution", () => {
 
   it("should process local: file paths in outputs and encode file content as base64", async () => {
     // Create a temporary directory for the test
-    const testDir = fs.mkdtempSync(path.join(os.tmpdir(), "ve-execution-local-test-"));
+    const testDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "ve-execution-local-test-"),
+    );
     const testFileName = "test-binary-file.bin";
     const testFilePath = path.join(testDir, testFileName);
-    
+
     // Create a binary file with all values 0-255
     const binaryData = Buffer.from(Array.from({ length: 256 }, (_, i) => i));
     fs.writeFileSync(testFilePath, binaryData);
@@ -513,7 +553,12 @@ describe("VeExecution", () => {
       ): Promise<IVeExecuteMessage> {
         // Use sh -c as remoteCommand to execute locally
         // sshCommand is "sh", so remoteCommand should be ["-c", input] to pass command as argument
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
 
@@ -544,17 +589,19 @@ describe("VeExecution", () => {
     try {
       fs.unlinkSync(testFilePath);
       fs.rmdirSync(testDir);
-    } catch{
+    } catch {
       // Ignore cleanup errors
     }
   });
 
   it("should process local: file paths in name/value array outputs", async () => {
     // Create a temporary directory for the test
-    const testDir = fs.mkdtempSync(path.join(os.tmpdir(), "ve-execution-local-test2-"));
+    const testDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "ve-execution-local-test2-"),
+    );
     const testFileName = "test-binary-file2.bin";
     const testFilePath = path.join(testDir, testFileName);
-    
+
     // Create a binary file with all values 0-255
     const binaryData = Buffer.from(Array.from({ length: 256 }, (_, i) => i));
     fs.writeFileSync(testFilePath, binaryData);
@@ -584,7 +631,12 @@ describe("VeExecution", () => {
       ): Promise<IVeExecuteMessage> {
         // Use sh -c as remoteCommand to execute locally
         // sshCommand is "sh", so remoteCommand should be ["-c", input] to pass command as argument
-        return await super.runOnVeHost("", tmplCommand, timeoutMs, remoteCommand || ["-c", input]);
+        return await super.runOnVeHost(
+          "",
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
       }
     }
 
@@ -613,7 +665,6 @@ describe("VeExecution", () => {
     expect(outputsRaw!.length).toBe(1);
     expect(outputsRaw![0].name).toBe("testfile");
     expect(outputsRaw![0].value).toBe(outputValue);
-
 
     // Cleanup
     try {

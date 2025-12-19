@@ -25,7 +25,40 @@ function findTemplateDirs(dir) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       if (entry.name === "templates") {
-        results.push(fullPath);
+        // Check if 'templates' is excluded by any .gitignore in its parent directories
+        // We'll gather the .gitignore files in the path from rootDir to fullPath
+        const relative = path.relative(rootDir, fullPath);
+        const parts = relative.split(path.sep);
+        let ignored = false;
+        let searchPath = rootDir;
+        for (let i = 0; i <= parts.length; i++) {
+          const giPath = path.join(searchPath, ".gitignore");
+          if (fs.existsSync(giPath)) {
+            // Naive implementation: check if the 'templates' directory path is ignored
+            // We'll read all ignore patterns and check if 'templates' or '**/templates' is present
+            const giContents = fs.readFileSync(giPath, "utf-8");
+            const glines = giContents.split("\n").map(x => x.trim()).filter(x => x && !x.startsWith("#"));
+            // Might ignore the whole dir (templates or **/templates)
+            for (const pattern of glines) {
+              // ignore-check is not complete but is ok for most simple .gitignore usage seen in such repos
+              // For full feature set would use something like 'ignore' npm package
+              if (
+                pattern === "templates" ||
+                pattern === "**/templates" ||
+                pattern === "templates/" || 
+                pattern === "**/templates/"
+              ) {
+                ignored = true;
+                break;
+              }
+            }
+          }
+          if (ignored) break;
+          if (i < parts.length) searchPath = path.join(searchPath, parts[i]);
+        }
+        if (!ignored) {
+          results.push(fullPath);
+        }
       } else {
         results = results.concat(findTemplateDirs(fullPath));
       }

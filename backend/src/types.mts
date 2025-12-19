@@ -70,7 +70,7 @@ export interface IParameter {
   advanced?: boolean;
   upload?: boolean;
   default?: string | number | boolean;
-  enumValues?: string[];
+  enumValues?: (string | { name: string; value: string | number | boolean })[];
   templatename?: string;
   template?: string;
   if?: string;
@@ -145,7 +145,7 @@ export interface ISingleExecuteMessagesResponse {
   messages: IVeExecuteMessage[];
   restartKey?: string;
 }
-export interface IApplicationResponse { 
+export interface IApplicationResponse {
   application: IApplicationWeb;
   parameters: IParameter[];
 }

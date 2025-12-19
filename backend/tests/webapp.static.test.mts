@@ -22,15 +22,15 @@ describe("WebApp serves index.html", () => {
     );
     // Point frontend dir to tempDir
     process.env.LXC_MANAGER_FRONTEND_DIR = tempDir;
-    
+
     // Create a temporary directory for StorageContext
     testDir = mkdtempSync(path.join(tmpdir(), "webapp-static-storage-"));
     secretFilePath = path.join(testDir, "secret.txt");
-    
+
     // Create a valid storagecontext.json file
     const storageContextPath = path.join(testDir, "storagecontext.json");
     writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
-    
+
     // Minimal StorageContext init; paths won't be used for this test route
     StorageContext.setInstance(testDir, secretFilePath);
   });

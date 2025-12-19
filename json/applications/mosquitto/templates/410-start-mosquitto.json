@@ -1,0 +1,11 @@
+{
+  "execute_on": "lxc",
+  "name": "Start Mosquitto Service",
+  "description": "Enable and start the Mosquitto MQTT broker service",
+  "commands": [
+    {
+      "script": "start-mosquitto.sh",
+      "description": "Enable and start Mosquitto service"
+    }
+  ]
+}

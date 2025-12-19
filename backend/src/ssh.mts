@@ -43,7 +43,7 @@ function readServicePublicKey(): string | null {
 
 function buildAppendCommand(
   pubKey: string,
-  targetFile: string = "~/.ssh/authenticated_keys",
+  targetFile: string = "~/.ssh/authorized_keys",
 ): string {
   // Use single quotes around key to avoid shell expansion; comments should not contain single quotes
   return `echo '${pubKey}' >>${targetFile}`;

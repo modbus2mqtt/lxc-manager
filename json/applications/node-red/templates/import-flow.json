@@ -30,7 +30,6 @@
   "commands": [
     {
       "name": "Import Flow",
-      "execute_on": "host:node-red",
       "script": "scripts/import-flow.sh"
     }
   ],

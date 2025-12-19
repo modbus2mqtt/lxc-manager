@@ -11,7 +11,7 @@ beforeAll(() => {
   // Create a temporary directory for the test
   testDir = mkdtempSync(join(tmpdir(), "jsonvalidator-test-"));
   secretFilePath = join(testDir, "secret.txt");
-  
+
   // Create a valid storagecontext.json file
   const storageContextPath = join(testDir, "storagecontext.json");
   writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");

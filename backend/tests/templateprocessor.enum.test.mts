@@ -16,7 +16,7 @@ describe("TemplateProcessor enum handling", () => {
     // Create a temporary directory for the test
     testDir = mkdtempSync(path.join(tmpdir(), "templateprocessor-enum-test-"));
     secretFilePath = path.join(testDir, "secret.txt");
-    
+
     // Create a valid storagecontext.json file
     const storageContextPath = path.join(testDir, "storagecontext.json");
     writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
@@ -45,7 +45,9 @@ describe("TemplateProcessor enum handling", () => {
       veContext,
       "sh",
     );
-    const staticParam = loaded.parameters.find((p: { id: string }) => p.id === "color");
+    const staticParam = loaded.parameters.find(
+      (p: { id: string }) => p.id === "color",
+    );
     expect(staticParam).toBeDefined();
     // Validate correct enumeration regardless of underlying implementation
     expect(Array.isArray(staticParam?.enumValues)).toBe(true);
@@ -61,7 +63,9 @@ describe("TemplateProcessor enum handling", () => {
       veContext,
       "sh",
     );
-    const dynParam = loaded.parameters.find((p: { id: string }) => p.id === "iface");
+    const dynParam = loaded.parameters.find(
+      (p: { id: string }) => p.id === "iface",
+    );
     expect(dynParam).toBeDefined();
     // TemplateProcessor should surface the enumValuesTemplate to webuiTemplates
     expect(loaded.webuiTemplates).toContain("list-enum-values.json");

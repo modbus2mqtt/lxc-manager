@@ -176,10 +176,14 @@ export class VEWebApp {
       try {
         const veContext = storageContext.getCurrentVEContext();
         if (!veContext) {
-          res.status(404).json({ error: "No default SSH config available. Please configure first" });
+          res
+            .status(404)
+            .json({
+              error: "No default SSH config available. Please configure first",
+            });
           return;
         }
-        const key = veContext.getKey(); 
+        const key = veContext.getKey();
         this.returnResponse<ISshConfigKeyResponse>(res, { key });
       } catch (err: any) {
         res.status(500).json({ error: err.message });
@@ -262,9 +266,9 @@ export class VEWebApp {
     // GET /api/unresolved-parameters/:application/:task?veContext=<key>
     this.app.get(ApiUri.UnresolvedParameters, async (req, res) => {
       try {
-        const application:string = req.params.application;
-        const task:string = req.params.task;
-        const veContextKey:string = req.params.veContext;
+        const application: string = req.params.application;
+        const task: string = req.params.task;
+        const veContextKey: string = req.params.veContext;
         const storageContext = StorageContext.getInstance();
         const ctx: IVEContext | null =
           storageContext.getVEContextByKey(veContextKey);
@@ -277,7 +281,7 @@ export class VEWebApp {
         const unresolved = await templateProcessor.getUnresolvedParameters(
           application,
           task as TaskType,
-          ctx
+          ctx,
         );
         this.returnResponse<IUnresolvedParametersResponse>(res, {
           unresolvedParameters: unresolved,
@@ -299,13 +303,21 @@ export class VEWebApp {
     });
     this.app.get(ApiUri.TemplateDetailsForApplication, async (req, res) => {
       try {
-        const veContext = storageContext.getVEContextByKey(req.params.veContext);
+        const veContext = storageContext.getVEContextByKey(
+          req.params.veContext,
+        );
         if (!veContext) {
           return res
             .status(404)
             .json({ success: false, error: "VE context not found" });
-        } 
-        const application = await storageContext.getTemplateProcessor().loadApplication(req.params.application,req.params.task as TaskType, veContext);
+        }
+        const application = await storageContext
+          .getTemplateProcessor()
+          .loadApplication(
+            req.params.application,
+            req.params.task as TaskType,
+            veContext,
+          );
         this.returnResponse<ITemplateProcessorLoadResult>(res, application);
       } catch (err: any) {
         res.status(500).json({ error: err.message });
@@ -315,4 +327,3 @@ export class VEWebApp {
     webAppVE.init();
   }
 }
-

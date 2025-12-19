@@ -20,7 +20,7 @@ describe("ProxmoxExecution shell quoting", () => {
     // Create a temporary directory for the test
     testDir = mkdtempSync(path.join(tmpdir(), "ve-execution-shellquote-test-"));
     secretFilePath = path.join(testDir, "secret.txt");
-    
+
     // Create a valid storagecontext.json file
     const storageContextPath = path.join(testDir, "storagecontext.json");
     fs.writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");

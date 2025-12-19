@@ -13,8 +13,6 @@ function makeTempFile(): string {
 }
 
 describe("Context file encryption", () => {
-
-
   it("fails or differs when using a different secret.txt", () => {
     const filePath = makeTempFile();
     const storageContextPath = path.join(filePath, "storagecontext.json");
