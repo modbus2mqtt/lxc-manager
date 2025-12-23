@@ -23,12 +23,20 @@
   ],
   "commands": [
     {
-      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"lighttpd php fcgi php-cgi phpmyadmin\"},{\"id\":\"http_port\",\"value\":\"{{http_port}}\"}]'"
+      "properties": [
+        {
+          "id": "ostype",
+          "value": "alpine"
+        },
+        {
+          "id": "packages",
+          "value": "lighttpd php fcgi php-cgi phpmyadmin"
+        },
+        {
+          "id": "http_port",
+          "value": "{{http_port}}"
+        }
+      ]
     }
-  ],
-  "outputs": [
-    { "id": "ostype" },
-    { "id": "packages" },
-    { "id": "http_port" }
   ]
 }

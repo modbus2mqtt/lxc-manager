@@ -22,18 +22,44 @@
   ],
   "commands": [
     {
-      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"nodejs npm\"},{\"id\":\"command\",\"value\":\"node-red\"},{\"id\":\"command_args\",\"value\":\"--userDir $DATA_DIR --port {{http_port}}\"},{\"id\":\"package\",\"value\":\"node-red\"},{\"id\":\"owned_paths\",\"value\":\"\"},{\"id\":\"uid\",\"value\":\"\"},{\"id\":\"group\",\"value\":\"\"},{\"id\":\"http_port\",\"value\":\"{{http_port}}\"}]'"
+      "properties": [
+        {
+          "id": "ostype",
+          "value": "alpine"
+        },
+        {
+          "id": "packages",
+          "value": "nodejs npm"
+        },
+        {
+          "id": "command",
+          "value": "node-red"
+        },
+        {
+          "id": "command_args",
+          "value": "--userDir $DATA_DIR --port {{http_port}}"
+        },
+        {
+          "id": "package",
+          "value": "node-red"
+        },
+        {
+          "id": "owned_paths",
+          "value": ""
+        },
+        {
+          "id": "uid",
+          "value": ""
+        },
+        {
+          "id": "group",
+          "value": ""
+        },
+        {
+          "id": "http_port",
+          "value": "{{http_port}}"
+        }
+      ]
     }
-  ],
-  "outputs": [
-    { "id": "ostype" },
-    { "id": "packages" },
-    { "id": "command" },
-    { "id": "command_args" },
-    { "id": "package" },
-    { "id": "owned_paths" },
-    { "id": "uid" },
-    { "id": "group" },
-    { "id": "http_port" }
   ]
 }

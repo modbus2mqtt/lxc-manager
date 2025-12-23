@@ -101,21 +101,56 @@
   ],
   "commands": [
     {
-      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"mosquitto mosquitto-clients\"},{\"id\":\"auth_mode\",\"value\":\"{{auth_mode}}\"},{\"id\":\"mqtt_port\",\"value\":\"{{mqtt_port}}\"},{\"id\":\"mqtts_port\",\"value\":\"{{mqtts_port}}\"},{\"id\":\"username\",\"value\":\"{{username}}\"},{\"id\":\"password\",\"value\":\"{{password}}\"},{\"id\":\"bind_address\",\"value\":\"{{bind_address}}\"},{\"id\":\"server_cert\",\"value\":\"{{server_cert}}\"},{\"id\":\"server_key\",\"value\":\"{{server_key}}\"},{\"id\":\"ca_cert\",\"value\":\"{{ca_cert}}\"},{\"id\":\"ca_key\",\"value\":\"{{ca_key}}\"}]'"
+      "properties": [
+        {
+          "id": "ostype",
+          "value": "alpine"
+        },
+        {
+          "id": "packages",
+          "value": "mosquitto mosquitto-clients"
+        },
+        {
+          "id": "auth_mode",
+          "value": "{{auth_mode}}"
+        },
+        {
+          "id": "mqtt_port",
+          "value": "{{mqtt_port}}"
+        },
+        {
+          "id": "mqtts_port",
+          "value": "{{mqtts_port}}"
+        },
+        {
+          "id": "username",
+          "value": "{{username}}"
+        },
+        {
+          "id": "password",
+          "value": "{{password}}"
+        },
+        {
+          "id": "bind_address",
+          "value": "{{bind_address}}"
+        },
+        {
+          "id": "server_cert",
+          "value": "{{server_cert}}"
+        },
+        {
+          "id": "server_key",
+          "value": "{{server_key}}"
+        },
+        {
+          "id": "ca_cert",
+          "value": "{{ca_cert}}"
+        },
+        {
+          "id": "ca_key",
+          "value": "{{ca_key}}"
+        }
+      ]
     }
-  ],
-  "outputs": [
-    { "id": "ostype" },
-    { "id": "packages" },
-    { "id": "auth_mode" },
-    { "id": "mqtt_port" },
-    { "id": "mqtts_port" },
-    { "id": "username" },
-    { "id": "password" },
-    { "id": "bind_address" },
-    { "id": "server_cert" },
-    { "id": "server_key" },
-    { "id": "ca_cert" },
-    { "id": "ca_key" }
   ]
 }

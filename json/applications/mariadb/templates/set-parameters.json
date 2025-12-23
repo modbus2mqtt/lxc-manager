@@ -66,17 +66,40 @@
   ],
   "commands": [
     {
-      "command": "echo '[{\"id\":\"ostype\",\"value\":\"alpine\"},{\"id\":\"packages\",\"value\":\"mariadb mariadb-client\"},{\"id\":\"datadir\",\"value\":\"{{datadir}}\"},{\"id\":\"root_password\",\"value\":\"{{root_password}}\"},{\"id\":\"bind_address\",\"value\":\"{{bind_address}}\"},{\"id\":\"allow_remote_root\",\"value\":\"{{allow_remote_root}}\"},{\"id\":\"remove_anonymous_users\",\"value\":\"{{remove_anonymous_users}}\"},{\"id\":\"remove_test_database\",\"value\":\"{{remove_test_database}}\"}]'"
+      "properties": [
+        {
+          "id": "ostype",
+          "value": "alpine"
+        },
+        {
+          "id": "packages",
+          "value": "mariadb mariadb-client"
+        },
+        {
+          "id": "datadir",
+          "value": "{{datadir}}"
+        },
+        {
+          "id": "root_password",
+          "value": "{{root_password}}"
+        },
+        {
+          "id": "bind_address",
+          "value": "{{bind_address}}"
+        },
+        {
+          "id": "allow_remote_root",
+          "value": "{{allow_remote_root}}"
+        },
+        {
+          "id": "remove_anonymous_users",
+          "value": "{{remove_anonymous_users}}"
+        },
+        {
+          "id": "remove_test_database",
+          "value": "{{remove_test_database}}"
+        }
+      ]
     }
-  ],
-  "outputs": [
-    { "id": "ostype" },
-    { "id": "packages" },
-    { "id": "datadir" },
-    { "id": "root_password" },
-    { "id": "bind_address" },
-    { "id": "allow_remote_root" },
-    { "id": "remove_anonymous_users" },
-    { "id": "remove_test_database" }
   ]
 }
