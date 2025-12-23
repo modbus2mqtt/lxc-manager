@@ -37,6 +37,40 @@ else
   exit 1
 fi
 
+# Helper function to retry a command with exponential backoff
+retry_command() {
+  local cmd="$1"
+  local max_attempts=5
+  local attempt=1
+  local delay=1
+  local last_error=""
+  
+  while [ $attempt -le $max_attempts ]; do
+    # Capture both stdout and stderr, but redirect stderr to stdout for capture
+    last_error=$(eval "$cmd" 2>&1)
+    local exit_code=$?
+    
+    if [ $exit_code -eq 0 ]; then
+      # Success - output the result to stderr (for visibility)
+      echo "$last_error" >&2
+      return 0
+    fi
+    
+    if [ $attempt -lt $max_attempts ]; then
+      echo "Attempt $attempt failed: $last_error" >&2
+      echo "Retrying in ${delay}s..." >&2
+      sleep "$delay"
+      delay=$((delay * 2))  # Exponential backoff: 1s, 2s, 4s, 8s
+      attempt=$((attempt + 1))
+    else
+      # Last attempt failed - show the error
+      echo "Final attempt failed: $last_error" >&2
+      return 1
+    fi
+  done
+  return 1
+}
+
 # 1. Create group if not exists
 GROUP_CREATED=0
 if ! getent group "$USERNAME" >/dev/null 2>&1; then
@@ -45,18 +79,30 @@ if ! getent group "$USERNAME" >/dev/null 2>&1; then
     # Check if GID is already in use
     if ! getent group "$GID_VALUE" >/dev/null 2>&1; then
       if [ "$SYSTEM_TYPE" = "alpine" ]; then
-        $GROUPADD_CMD -g "$GID_VALUE" "$USERNAME" 1>&2
+        if ! retry_command "$GROUPADD_CMD -g \"$GID_VALUE\" \"$USERNAME\""; then
+          echo "Error: Failed to create group $USERNAME with GID $GID_VALUE after retries" >&2
+          exit 1
+        fi
       else
-        $GROUPADD_CMD -g "$GID_VALUE" "$USERNAME" 1>&2
+        if ! retry_command "$GROUPADD_CMD -g \"$GID_VALUE\" \"$USERNAME\""; then
+          echo "Error: Failed to create group $USERNAME with GID $GID_VALUE after retries" >&2
+          exit 1
+        fi
       fi
     else
       # GID is in use, create group without specifying GID
       echo "Warning: GID $GID_VALUE is already in use, creating group with auto-assigned GID" >&2
-      $GROUPADD_CMD "$USERNAME" 1>&2
+      if ! retry_command "$GROUPADD_CMD \"$USERNAME\""; then
+        echo "Error: Failed to create group $USERNAME after retries" >&2
+        exit 1
+      fi
     fi
   else
     # No GID specified, create group with auto-assigned GID
-    $GROUPADD_CMD "$USERNAME" 1>&2
+    if ! retry_command "$GROUPADD_CMD \"$USERNAME\""; then
+      echo "Error: Failed to create group $USERNAME after retries" >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -74,18 +120,30 @@ if ! id -u "$USERNAME" >/dev/null 2>&1; then
     # UID specified, use it
     if [ "$SYSTEM_TYPE" = "alpine" ]; then
       # Alpine adduser: -D = don't assign password, -h = home dir, -s = shell, -G = group, -u = uid
-      $USERADD_CMD -D -h "/home/$USERNAME" -s /sbin/nologin -G "$USERNAME" -u "$UID_VALUE" "$USERNAME" 1>&2
+      if ! retry_command "$USERADD_CMD -D -h \"/home/$USERNAME\" -s /sbin/nologin -G \"$USERNAME\" -u \"$UID_VALUE\" \"$USERNAME\""; then
+        echo "Error: Failed to create user $USERNAME with UID $UID_VALUE after retries" >&2
+        exit 1
+      fi
     else
       # Debian useradd: -u = uid, -g = group, -M = no home, -N = no group, -s = shell, -d = home dir
-      $USERADD_CMD -u "$UID_VALUE" -g "$ACTUAL_GID" -M -N -s /usr/sbin/nologin -d "/home/$USERNAME" "$USERNAME" 1>&2
+      if ! retry_command "$USERADD_CMD -u \"$UID_VALUE\" -g \"$ACTUAL_GID\" -M -N -s /usr/sbin/nologin -d \"/home/$USERNAME\" \"$USERNAME\""; then
+        echo "Error: Failed to create user $USERNAME with UID $UID_VALUE after retries" >&2
+        exit 1
+      fi
     fi
     ACTUAL_UID="$UID_VALUE"
   else
     # No UID specified, let system assign it
     if [ "$SYSTEM_TYPE" = "alpine" ]; then
-      $USERADD_CMD -D -h "/home/$USERNAME" -s /sbin/nologin -G "$USERNAME" "$USERNAME" 1>&2
+      if ! retry_command "$USERADD_CMD -D -h \"/home/$USERNAME\" -s /sbin/nologin -G \"$USERNAME\" \"$USERNAME\""; then
+        echo "Error: Failed to create user $USERNAME after retries" >&2
+        exit 1
+      fi
     else
-      $USERADD_CMD -g "$ACTUAL_GID" -M -N -s /usr/sbin/nologin -d "/home/$USERNAME" "$USERNAME" 1>&2
+      if ! retry_command "$USERADD_CMD -g \"$ACTUAL_GID\" -M -N -s /usr/sbin/nologin -d \"/home/$USERNAME\" \"$USERNAME\""; then
+        echo "Error: Failed to create user $USERNAME after retries" >&2
+        exit 1
+      fi
     fi
     ACTUAL_UID=$(id -u "$USERNAME")
   fi

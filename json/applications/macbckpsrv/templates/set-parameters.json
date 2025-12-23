@@ -69,16 +69,5 @@
         { "id": "packages", "value": "samba avahi-daemon" }
       ]
     }
-  ],
-  "outputs": [
-    {
-      "id": "packages"
-    },
-    {
-      "id": "uid"
-    },
-    {
-      "id": "gid"
-    }
   ]
 }

@@ -42,6 +42,14 @@
       "description": "Volume mappings in key=value format, one per line. Each line creates a bind mount from <host_mountpoint>/<base_path>/<hostname>/<key> to /<value> in the container. Example:\nvolume1=/var/lib/myapp/data\nvolume2=/var/lib/myapp/logs"
     },
     {
+      "id": "username",
+      "name": "Username",
+      "type": "string",
+      "default": "",
+      "description": "Optional: Username for setting permissions on volume directories. If provided, will be used for chown instead of numeric UID/GID. Should match the user created on the VE host (300-create-user-on-host.json).",
+      "advanced": true
+    },
+    {
       "id": "uid",
       "name": "UID",
       "type": "string",

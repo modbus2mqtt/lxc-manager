@@ -12,6 +12,7 @@ HOSTNAME="{{ hostname}}"
 HOST_MOUNTPOINT="{{ host_mountpoint}}"
 BASE_PATH="{{ base_path}}"
 VOLUMES="{{ volumes}}"
+USERNAME="{{ username}}"
 UID_VALUE="{{ uid}}"
 GID_VALUE="{{ gid}}"
 
@@ -103,14 +104,22 @@ while IFS= read -r line <&3; do
   fi
   
   # Set permissions on the source directory if uid/gid are provided
+  # With standard Proxmox mapping: Container UID N → Host UID (100000 + N)
+  # So we need to set ownership to (UID_VALUE + 100000):(GID_VALUE + 100000) on the host
   if [ -n "$UID_VALUE" ] && [ -n "$GID_VALUE" ] && [ "$UID_VALUE" != "" ] && [ "$GID_VALUE" != "" ]; then
-    if chown "$UID_VALUE:$GID_VALUE" "$SOURCE_PATH" 2>/dev/null; then
-      echo "Set ownership of $SOURCE_PATH to $UID_VALUE:$GID_VALUE" >&2
+    # Calculate mapped UID/GID for standard Proxmox mapping
+    MAPPED_UID=$((UID_VALUE + 100000))
+    MAPPED_GID=$((GID_VALUE + 100000))
+    
+    # Set ownership recursively with mapped UID/GID
+    if chown -R "$MAPPED_UID:$MAPPED_GID" "$SOURCE_PATH" 2>/dev/null; then
+      echo "Set ownership of $SOURCE_PATH (recursively) to $MAPPED_UID:$MAPPED_GID (Container UID $UID_VALUE -> Host UID $MAPPED_UID)" >&2
     else
-      echo "Warning: Failed to set ownership of $SOURCE_PATH to $UID_VALUE:$GID_VALUE" >&2
+      echo "Warning: Failed to set ownership of $SOURCE_PATH to $MAPPED_UID:$MAPPED_GID" >&2
     fi
-    if chmod 755 "$SOURCE_PATH" 2>/dev/null; then
-      echo "Set permissions of $SOURCE_PATH to 755" >&2
+    # Set permissions recursively
+    if chmod -R 755 "$SOURCE_PATH" 2>/dev/null; then
+      echo "Set permissions of $SOURCE_PATH (recursively) to 755" >&2
     else
       echo "Warning: Failed to set permissions of $SOURCE_PATH" >&2
     fi
@@ -158,40 +167,9 @@ if [ "$WAS_RUNNING" -eq 1 ]; then
   fi
 fi
 
-# After container is running, try to set permissions inside the container
-# This is necessary for unprivileged containers where UID mapping may cause issues
-if [ -n "$UID_VALUE" ] && [ -n "$GID_VALUE" ] && [ "$UID_VALUE" != "" ] && [ "$GID_VALUE" != "" ]; then
-  if container_running; then
-    # Wait a moment for container to be fully ready
-    sleep 1
-    # Re-read volumes and set permissions in container
-    TMPFILE2=$(mktemp)
-    echo "$VOLUMES" > "$TMPFILE2"
-    while IFS= read -r line <&3; do
-      [ -z "$line" ] && continue
-      VOLUME_KEY=$(echo "$line" | cut -d'=' -f1)
-      VOLUME_VALUE=$(echo "$line" | cut -d'=' -f2-)
-      [ -z "$VOLUME_KEY" ] && continue
-      [ -z "$VOLUME_VALUE" ] && continue
-      CONTAINER_PATH="/$VOLUME_VALUE"
-      
-      # Try to set permissions inside container
-      # Use pct exec to run chown inside the container
-      if pct exec "$VMID" -- chown "$UID_VALUE:$GID_VALUE" "$CONTAINER_PATH" 2>/dev/null; then
-        echo "Set ownership of $CONTAINER_PATH in container to $UID_VALUE:$GID_VALUE" >&2
-      else
-        echo "Warning: Failed to set ownership of $CONTAINER_PATH in container (may be due to UID mapping in unprivileged container)" >&2
-        echo "Warning: You may need to set permissions on the host with the mapped UID" >&2
-      fi
-      if pct exec "$VMID" -- chmod 755 "$CONTAINER_PATH" 2>/dev/null; then
-        echo "Set permissions of $CONTAINER_PATH in container to 755" >&2
-      else
-        echo "Warning: Failed to set permissions of $CONTAINER_PATH in container" >&2
-      fi
-    done 3< "$TMPFILE2"
-    rm -f "$TMPFILE2"
-  fi
-fi
+# Note: Permissions are set on the host with mapped UID/GID (UID + 100000, GID + 100000)
+# This is because we use standard Proxmox mapping where Container UID N → Host UID (100000 + N)
+# No need to set permissions inside the container as they are already correct on the host
 
 echo "Successfully processed volumes for container $VMID" >&2
 exit 0
