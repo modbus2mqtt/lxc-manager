@@ -58,6 +58,10 @@
         {
           "id": "http_port",
           "value": "{{http_port}}"
+        },
+        {
+          "id": "volumes",
+          "value": "data=node-red"
         }
       ]
     }

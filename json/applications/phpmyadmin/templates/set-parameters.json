@@ -35,6 +35,10 @@
         {
           "id": "http_port",
           "value": "{{http_port}}"
+        },
+        {
+          "id": "volumes",
+          "value": "config=lighttpd\nconfig=phpmyadmin"
         }
       ]
     }

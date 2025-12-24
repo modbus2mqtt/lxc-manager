@@ -13,14 +13,6 @@
       "description": "Select storage to mount. Only filesystems prefixed with 'uuid:' are supported."
     },
     {
-      "id": "mountpoint",
-      "name": "Mount point on host",
-      "type": "string",
-      "required": true,
-      "default": "/mnt/backupdisk",
-      "description": "Mount point on the Proxmox host where the device will be mounted."
-    },
-    {
       "id": "uid",
       "name": "UID for mount directory",
       "type": "string",

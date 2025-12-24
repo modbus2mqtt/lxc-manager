@@ -13,14 +13,6 @@
       "description": "Select ZFS pool. Only pools prefixed with 'zfs:' are shown."
     },
     {
-      "id": "mountpoint",
-      "name": "Mount point on host",
-      "type": "string",
-      "required": true,
-      "default": "/mnt/zfs",
-      "description": "Mount point path. A subdirectory with this name will be created under the ZFS pool mountpoint on the host."
-    },
-    {
       "id": "uid",
       "name": "UID for mount directory",
       "type": "string",

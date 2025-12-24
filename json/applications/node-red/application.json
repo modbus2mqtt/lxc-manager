@@ -8,9 +8,9 @@
     "100-create-configure-lxc.json",
     "200-start-lxc.json",
     "210-wait-for-container-ready.json",
-    "330-install-apk-package.json",
+    "330-install-packages.json",
     "340-install-node-application.json",
-    "350-create-openrc-service.json"
+    "350-create-enable-service.json"
   ]
 }
 

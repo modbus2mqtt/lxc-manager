@@ -98,6 +98,10 @@
         {
           "id": "remove_test_database",
           "value": "{{remove_test_database}}"
+        },
+        {
+          "id": "volumes",
+          "value": "data=mysql"
         }
       ]
     }

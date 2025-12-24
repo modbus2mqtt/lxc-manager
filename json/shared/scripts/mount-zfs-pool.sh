@@ -11,13 +11,12 @@
 # All output is sent to stderr. Script is idempotent and can be run multiple times safely.
 
 STORAGE_SELECTION="{{ storage_selection}}"
-MOUNTPOINT="{{ mountpoint}}"
 UID_VALUE="{{ uid}}"
 GID_VALUE="{{ gid}}"
 
 # Check that required parameters are not empty
-if [ -z "$STORAGE_SELECTION" ] || [ -z "$MOUNTPOINT" ]; then
-  echo "Error: Required parameters (storage_selection, mountpoint) must be set and not empty!" >&2
+if [ -z "$STORAGE_SELECTION" ]; then
+  echo "Error: Required parameter (storage_selection) must be set and not empty!" >&2
   exit 1
 fi
 
@@ -62,27 +61,21 @@ if [ ! -d "$POOL_MOUNTPOINT" ]; then
   exit 1
 fi
 
-# Create subdirectory under pool mountpoint
-# The mountpoint parameter specifies where it should be mounted in the container
-# We create a directory under the pool mountpoint on the host
-# Use the last component of the mountpoint path as directory name
-# e.g., /mnt/backup -> backup, /mnt/zfs -> zfs
-SUBDIR_NAME=$(echo "$MOUNTPOINT" | sed 's|^/||' | awk -F'/' '{print $NF}')
-if [ -z "$SUBDIR_NAME" ] || [ "$SUBDIR_NAME" = "" ]; then
-  # Fallback: use a default name if mountpoint is just "/"
-  SUBDIR_NAME="container-share"
-fi
-CONTAINER_DIR="$POOL_MOUNTPOINT/$SUBDIR_NAME"
+# Use the ZFS pool mountpoint directly as host_mountpoint
+# e.g., /rpool, /tank, etc.
+HOST_MOUNTPOINT="$POOL_MOUNTPOINT"
 
-echo "Creating directory $CONTAINER_DIR under ZFS pool mountpoint..." >&2
-mkdir -p "$CONTAINER_DIR" >&2
+echo "Using ZFS pool mountpoint: $HOST_MOUNTPOINT" >&2
 
-# Set permissions on the container directory if uid/gid are provided
+# Set permissions on the pool mountpoint if uid/gid are provided
+# Note: This sets permissions on the pool root, which may not always be desired
+# but ensures the directory is accessible for volume creation
 if [ -n "$UID_VALUE" ] && [ -n "$GID_VALUE" ] && [ "$UID_VALUE" != "" ] && [ "$GID_VALUE" != "" ]; then
-  chown "$UID_VALUE:$GID_VALUE" "$CONTAINER_DIR" >&2
+  # Only set permissions if we can (may fail if pool is read-only or protected)
+  chown "$UID_VALUE:$GID_VALUE" "$HOST_MOUNTPOINT" 2>/dev/null || echo "Warning: Could not set ownership on $HOST_MOUNTPOINT (may be protected)" >&2
 fi
 
-echo "Directory $CONTAINER_DIR successfully created under ZFS pool $POOL_NAME" >&2
-echo '{ "id": "host_mountpoint", "value": "'$CONTAINER_DIR'" }'
+echo "ZFS pool $POOL_NAME mountpoint: $HOST_MOUNTPOINT" >&2
+echo '{ "id": "host_mountpoint", "value": "'$HOST_MOUNTPOINT'" }'
 exit 0
 

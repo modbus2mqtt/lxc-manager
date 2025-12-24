@@ -497,6 +497,10 @@ export class VeExecution extends EventEmitter {
                   // Replace variables in value if it's a string
                   if (typeof value === "string") {
                     value = this.replaceVars(value);
+                    // Skip property if value is "NOT_DEFINED" (optional parameter not set)
+                    if (value === "NOT_DEFINED") {
+                      continue; // Skip this property
+                    }
                   }
                   // Only set if value is a primitive type (not array)
                   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
@@ -511,6 +515,10 @@ export class VeExecution extends EventEmitter {
                 // Replace variables in value if it's a string
                 if (typeof value === "string") {
                   value = this.replaceVars(value);
+                  // Skip property if value is "NOT_DEFINED" (optional parameter not set)
+                  if (value === "NOT_DEFINED") {
+                    continue; // Skip this property, don't set it in outputs
+                  }
                 }
                 // Only set if value is a primitive type (not array)
                 if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
@@ -892,7 +900,9 @@ export class VeExecution extends EventEmitter {
       if (this.outputs.has(v)) return String(this.outputs.get(v));
       if (this.inputs[v] !== undefined) return String(this.inputs[v]);
       if (this.defaults.has(v)) return String(this.defaults.get(v));
-      throw new Error(`Unknown variable: {{${v}}}`);
+      // Return "NOT_DEFINED" for undefined variables instead of throwing error
+      // Scripts must check for this value and generate appropriate error messages
+      return "NOT_DEFINED";
     });
   }
 }

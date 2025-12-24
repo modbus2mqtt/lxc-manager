@@ -15,13 +15,12 @@
 # All output is sent to stderr. Script is idempotent and can be run multiple times safely.
 
 STORAGE_SELECTION="{{ storage_selection}}"
-MOUNTPOINT="{{ mountpoint}}"
 UID_VALUE="{{ uid}}"
 GID_VALUE="{{ gid}}"
 
 # Check that required parameters are not empty
-if [ -z "$STORAGE_SELECTION" ] || [ -z "$MOUNTPOINT" ]; then
-  echo "Error: Required parameters (storage_selection, mountpoint) must be set and not empty!" >&2
+if [ -z "$STORAGE_SELECTION" ]; then
+  echo "Error: Required parameter (storage_selection) must be set and not empty!" >&2
   exit 1
 fi
 
@@ -47,6 +46,12 @@ if [ -z "$DEV" ]; then
   echo "Device with UUID $UUID not found!" >&2
   exit 1
 fi
+
+# Auto-generate mountpoint based on UUID
+# Use first 8 characters of UUID for mountpoint name
+UUID_SHORT=$(echo "$UUID" | cut -c1-8)
+MOUNTPOINT="/mnt/disk-$UUID_SHORT"
+echo "Auto-generated mountpoint: $MOUNTPOINT" >&2
 
 # Create mountpoint on host
 mkdir -p "$MOUNTPOINT"

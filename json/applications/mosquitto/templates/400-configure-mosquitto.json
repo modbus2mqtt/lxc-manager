@@ -25,18 +25,18 @@
       "description": "Port number for MQTT over TLS"
     },
     {
-      "id": "username",
-      "name": "Username",
+      "id": "mqtt_username",
+      "name": "MQTT Username",
       "type": "string",
       "required": false,
-      "description": "Username for MQTT broker"
+      "description": "Username for MQTT broker login"
     },
     {
-      "id": "password",
-      "name": "Password",
+      "id": "mqtt_password",
+      "name": "MQTT Password",
       "type": "string",
       "required": false,
-      "description": "Password for MQTT broker"
+      "description": "Password for MQTT broker login"
     },
     {
       "id": "bind_address",

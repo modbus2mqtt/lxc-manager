@@ -65,7 +65,7 @@
       "properties": [
         { "id": "ostype", "value": "debian" },
         { "id": "volumes", "value": "timemachine=timemachine" },
-        { "id": "envs", "value": "USERNAME={{username}}\\nPASSWORD={{password}}\\nSHARE_NAME={{share_name}}" },
+        { "id": "envs", "value": "USERNAME={{username}}\nPASSWORD={{password}}\nSHARE_NAME={{share_name}}" },
         { "id": "packages", "value": "samba avahi-daemon" }
       ]
     }

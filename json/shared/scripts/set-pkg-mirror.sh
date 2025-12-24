@@ -17,7 +17,7 @@ case "$OSTYPE" in
       # Get Alpine version
       if [ -f /etc/alpine-release ]; then
         ALPINE_VERSION=$(cat /etc/alpine-release | cut -d. -f1,2)
-        ALPINE_VER=$(echo "$ALPINE_VERSION" | sed 's/\./v/')
+        ALPINE_VER="v${ALPINE_VERSION}"
         
         # Backup original repositories if not already backed up
         if [ -f /etc/apk/repositories ] && [ ! -f /etc/apk/repositories.orig ]; then

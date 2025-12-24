@@ -1,0 +1,75 @@
+{
+  "execute_on": "lxc",
+  "name": "Create and Enable Service",
+  "description": "Create, enable and start a service. Supports both Alpine Linux (OpenRC) and Debian/Ubuntu (systemd). If the service already exists (e.g., mosquitto-openrc), it will be enabled and started without creating a new service.",
+  "parameters": [
+    {
+      "id": "command",
+      "name": "Command",
+      "type": "string",
+      "required": true,
+      "description": "The command to run (also used as service name)"
+    },
+    {
+      "id": "username",
+      "name": "Username",
+      "type": "string",
+      "required": false,
+      "description": "Optional username for the service. If not provided, the command name will be used as username."
+    },
+    {
+      "id": "command_args",
+      "name": "Command Line Arguments",
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Arguments for the command. Available variables: $HOME_DIR, $DATA_DIR, $SECURE_DIR"
+    },
+    {
+      "id": "uid",
+      "name": "User ID",
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Optional user ID (defaults to auto-assigned)"
+    },
+    {
+      "id": "group",
+      "name": "Group Name",
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Optional group name (will be created if not exists)"
+    },
+    {
+      "id": "owned_paths",
+      "name": "Owned Paths",
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Space-separated list of files/directories the user should own with rw access"
+    },
+    {
+      "id": "bind_privileged_port",
+      "name": "Bind Privileged Port",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "advanced": true,
+      "description": "Allow service to bind to privileged ports (e.g., 80, 443) by setting CAP_NET_BIND_SERVICE capability"
+    }
+  ],
+  "commands": [
+    {
+      "name": "Create and Enable Service",
+      "script": "create-enable-service.sh",
+      "description": "Create user, service file, enable and start the service"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "logfile_path"
+    }
+  ]
+}
+

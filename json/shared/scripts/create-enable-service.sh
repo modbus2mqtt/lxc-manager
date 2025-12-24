@@ -1,0 +1,324 @@
+#!/bin/sh
+# Create and enable service (runs inside the container)
+# Supports both Alpine Linux (OpenRC) and Debian/Ubuntu (systemd)
+# Inputs (templated):
+#   {{ command }}      - command name (also service name)
+#   {{ command_args }} - command line arguments
+#   {{ username }}     - optional username (if not provided, uses command as username)
+#   {{ uid }}          - optional user id
+#   {{ group }}        - optional group name
+#   {{ owned_paths }}  - space-separated paths to own
+#   {{ bind_privileged_port }} - allow binding to privileged ports (80, 443, etc.)
+
+COMMAND="{{ command }}"
+USERNAME_PARAM="{{ username }}"
+USER_ID="{{ uid }}"
+GROUP_NAME="{{ group }}"
+OWNED_PATHS="{{ owned_paths }}"
+BIND_PRIVILEGED_PORT="{{ bind_privileged_port }}"
+
+if [ -z "$COMMAND" ]; then
+  echo "Missing command" >&2
+  exit 2
+fi
+
+set -eu
+
+SERVICE_NAME="$COMMAND"
+# Use username parameter if provided, otherwise use command as username
+if [ -n "$USERNAME_PARAM" ] && [ "$USERNAME_PARAM" != "" ]; then
+  USERNAME="$USERNAME_PARAM"
+else
+  USERNAME="$COMMAND"
+fi
+HOME_DIR="/home/$USERNAME"
+DATA_DIR="/var/lib/$SERVICE_NAME"
+SECURE_DIR="/etc/$SERVICE_NAME/secure"
+LOGFILE="/var/log/$SERVICE_NAME.log"
+COMMAND_ARGS="{{ command_args }}"
+
+# Detect service manager
+if command -v rc-service >/dev/null 2>&1; then
+  # Alpine Linux with OpenRC
+  SERVICE_CMD="rc-service"
+  SERVICE_ENABLE_CMD="rc-update add"
+  SERVICE_STATUS_CMD="rc-service status"
+  USE_OPENRC=true
+elif command -v systemctl >/dev/null 2>&1; then
+  # Debian/Ubuntu with systemd
+  SERVICE_CMD="systemctl"
+  SERVICE_ENABLE_CMD="systemctl enable"
+  SERVICE_STATUS_CMD="systemctl status"
+  USE_OPENRC=false
+else
+  echo "Error: No supported service manager found (rc-service or systemctl)" >&2
+  exit 1
+fi
+
+# Check if service already exists
+SERVICE_EXISTS=false
+if [ "$USE_OPENRC" = "true" ]; then
+  if [ -f "/etc/init.d/$SERVICE_NAME" ]; then
+    SERVICE_EXISTS=true
+  fi
+else
+  if systemctl list-unit-files | grep -q "^${SERVICE_NAME}.service"; then
+    SERVICE_EXISTS=true
+  fi
+fi
+
+# If service doesn't exist, create it
+if [ "$SERVICE_EXISTS" = "false" ]; then
+  # Create group if specified and doesn't exist
+  if [ -n "$GROUP_NAME" ]; then
+    if ! getent group "$GROUP_NAME" >/dev/null 2>&1; then
+      if [ "$USE_OPENRC" = "true" ]; then
+        addgroup "$GROUP_NAME"
+      else
+        groupadd "$GROUP_NAME"
+      fi
+    fi
+    USER_GROUP="$GROUP_NAME"
+  else
+    USER_GROUP="$USERNAME"
+    if ! getent group "$USER_GROUP" >/dev/null 2>&1; then
+      if [ "$USE_OPENRC" = "true" ]; then
+        addgroup "$USER_GROUP"
+      else
+        groupadd "$USER_GROUP"
+      fi
+    fi
+  fi
+
+  # Create user if doesn't exist
+  if ! id -u "$USERNAME" >/dev/null 2>&1; then
+    if [ "$USE_OPENRC" = "true" ]; then
+      if [ -n "$USER_ID" ]; then
+        adduser -D -h "$HOME_DIR" -s /sbin/nologin -G "$USER_GROUP" -u "$USER_ID" "$USERNAME"
+      else
+        adduser -D -h "$HOME_DIR" -s /sbin/nologin -G "$USER_GROUP" "$USERNAME"
+      fi
+    else
+      if [ -n "$USER_ID" ]; then
+        useradd -r -d "$HOME_DIR" -s /usr/sbin/nologin -g "$USER_GROUP" -u "$USER_ID" "$USERNAME"
+      else
+        useradd -r -d "$HOME_DIR" -s /usr/sbin/nologin -g "$USER_GROUP" "$USERNAME"
+      fi
+    fi
+  fi
+
+  # Create directories
+  mkdir -p "$HOME_DIR" "$DATA_DIR" "$SECURE_DIR"
+  chown "$USERNAME:$USER_GROUP" "$HOME_DIR" "$DATA_DIR"
+  chown "$USERNAME:$USER_GROUP" "$SECURE_DIR"
+  chmod 700 "$SECURE_DIR"
+
+  # Create log file
+  touch "$LOGFILE"
+  chown "$USERNAME:$USER_GROUP" "$LOGFILE"
+
+  # Set ownership for owned_paths
+  if [ -n "$OWNED_PATHS" ]; then
+    for path in $OWNED_PATHS; do
+      if [ -e "$path" ]; then
+        chown "$USERNAME:$USER_GROUP" "$path"
+        chmod u+rw "$path"
+      else
+        mkdir -p "$path"
+        chown "$USERNAME:$USER_GROUP" "$path"
+        chmod u+rwx "$path"
+      fi
+    done
+  fi
+
+  # Find command path
+  COMMAND_PATH=$(command -v "$COMMAND" 2>/dev/null || echo "/usr/bin/$COMMAND")
+
+  if [ "$USE_OPENRC" = "true" ]; then
+    # Create OpenRC init script
+    cat > "/etc/init.d/$SERVICE_NAME" << EOF
+#!/sbin/openrc-run
+
+name="$SERVICE_NAME"
+description="$SERVICE_NAME service"
+
+command="$COMMAND_PATH"
+command_args="$COMMAND_ARGS"
+command_user="$USERNAME:$USER_GROUP"
+command_background=true
+pidfile="/run/\${RC_SVCNAME}.pid"
+output_log="$LOGFILE"
+error_log="$LOGFILE"
+
+export HOME="$HOME_DIR"
+export DATA="$DATA_DIR"
+export SECURE="$SECURE_DIR"
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    checkpath --directory --owner $USERNAME:$USER_GROUP --mode 0755 /run
+}
+EOF
+    chmod +x "/etc/init.d/$SERVICE_NAME"
+  else
+    # Create systemd service file
+    cat > "/etc/systemd/system/${SERVICE_NAME}.service" << EOF
+[Unit]
+Description=$SERVICE_NAME service
+After=network.target
+
+[Service]
+Type=simple
+User=$USERNAME
+Group=$USER_GROUP
+ExecStart=$COMMAND_PATH $COMMAND_ARGS
+Restart=always
+RestartSec=10
+StandardOutput=append:$LOGFILE
+StandardError=append:$LOGFILE
+Environment=HOME=$HOME_DIR
+Environment=DATA=$DATA_DIR
+Environment=SECURE=$SECURE_DIR
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload >&2
+  fi
+
+  # Set CAP_NET_BIND_SERVICE capability if requested (allows binding to ports < 1024)
+  if [ "$BIND_PRIVILEGED_PORT" = "true" ]; then
+    # Install libcap if not available (needed for setcap)
+    if ! command -v setcap >/dev/null 2>&1; then
+      if [ "$USE_OPENRC" = "true" ]; then
+        apk add --no-cache libcap >&2
+      else
+        apt-get update -qq >&2 && apt-get install -y --no-install-recommends libcap2-bin >&2
+      fi
+    fi
+    # Set capability to allow binding to privileged ports
+    if command -v setcap >/dev/null 2>&1; then
+      setcap 'cap_net_bind_service=+ep' "$COMMAND_PATH" >&2 || {
+        echo "Warning: Failed to set CAP_NET_BIND_SERVICE capability. Service may not be able to bind to privileged ports." >&2
+      }
+    else
+      echo "Warning: setcap not available after installation. Cannot set CAP_NET_BIND_SERVICE capability." >&2
+    fi
+  fi
+fi
+
+# Enable and start service
+if [ "$USE_OPENRC" = "true" ]; then
+  rc-update add "$SERVICE_NAME" default >&2
+  # For existing services (like mosquitto-openrc), ensure configuration file exists
+  # The mosquitto-openrc service uses: ${cfgfile:="/etc/mosquitto/${RC_SVCNAME#mosquitto.}.conf"}
+  # For RC_SVCNAME="mosquitto", this resolves to /etc/mosquitto/mosquitto.conf
+  if [ "$SERVICE_EXISTS" = "true" ] && [ "$SERVICE_NAME" = "mosquitto" ]; then
+    # Ensure the default config file exists (should be created by configure-mosquitto.json)
+    if [ ! -f "/etc/mosquitto/mosquitto.conf" ]; then
+      echo "Error: /etc/mosquitto/mosquitto.conf not found, but service exists. Configuration must be created before starting service." >&2
+      exit 1
+    fi
+    # Ensure mosquitto user can read the config file
+    if [ -f "/etc/mosquitto/mosquitto.conf" ]; then
+      chown mosquitto:mosquitto /etc/mosquitto/mosquitto.conf >&2 || true
+      chmod 644 /etc/mosquitto/mosquitto.conf >&2 || true
+    fi
+    # For unprivileged containers, /var/run or /run might not be writable by mosquitto user
+    # The mosquitto-openrc service uses pidfile="/run/$RC_SVCNAME.pid" in the init script
+    # But mosquitto itself tries to write the PID file from the config: pid_file /var/lib/mosquitto/mosquitto.pid
+    # There's a conflict: OpenRC expects /run/mosquitto.pid, but mosquitto config says /var/lib/mosquitto/mosquitto.pid
+    # The mosquitto binary will try to write to the location in the config file
+    # But OpenRC will also try to manage a PID file at /run/mosquitto.pid
+    # Solution: Ensure /var/lib/mosquitto exists and is writable (for mosquitto's PID file)
+    # OpenRC will handle /run/mosquitto.pid separately (it should create it as root)
+    if [ ! -d "/var/lib/mosquitto" ]; then
+      mkdir -p /var/lib/mosquitto >&2
+    fi
+    chown mosquitto:mosquitto /var/lib/mosquitto >&2 || true
+    chmod 755 /var/lib/mosquitto >&2 || true
+    # Also ensure /run exists (OpenRC needs it for its PID file management)
+    if [ ! -d "/run" ]; then
+      mkdir -p /run >&2
+    fi
+    chmod 755 /run >&2 || true
+  fi
+  rc-service "$SERVICE_NAME" start >&2
+else
+  systemctl enable "$SERVICE_NAME" >&2
+  systemctl start "$SERVICE_NAME" >&2
+fi
+
+# Verify that service is running
+if ! $SERVICE_STATUS_CMD "$SERVICE_NAME" >/dev/null 2>&1; then
+  echo "Error: $SERVICE_NAME service failed to start" >&2
+  # For existing services, try to get more information about the failure
+  if [ "$SERVICE_EXISTS" = "true" ] && [ "$USE_OPENRC" = "true" ]; then
+    echo "=== Service Status ===" >&2
+    rc-service "$SERVICE_NAME" status >&2 || true
+    echo "" >&2
+    echo "=== Service Logs ===" >&2
+    # Try to get logs from the service
+    if [ -f "/var/log/mosquitto/mosquitto.log" ]; then
+      echo "Last 20 lines of /var/log/mosquitto/mosquitto.log:" >&2
+      tail -20 /var/log/mosquitto/mosquitto.log >&2 || true
+    fi
+    if [ -f "/var/log/$SERVICE_NAME.log" ]; then
+      echo "Last 20 lines of /var/log/$SERVICE_NAME.log:" >&2
+      tail -20 "/var/log/$SERVICE_NAME.log" >&2 || true
+    fi
+    echo "" >&2
+    echo "=== Process Check ===" >&2
+    ps aux | grep -i "$SERVICE_NAME" | grep -v grep >&2 || echo "No $SERVICE_NAME process found" >&2
+    echo "" >&2
+    echo "=== Configuration Check ===" >&2
+    if [ "$SERVICE_NAME" = "mosquitto" ]; then
+      if [ -f "/etc/mosquitto/mosquitto.conf" ]; then
+        echo "Configuration file exists: /etc/mosquitto/mosquitto.conf" >&2
+        ls -la /etc/mosquitto/mosquitto.conf >&2 || true
+      else
+        echo "Configuration file missing: /etc/mosquitto/mosquitto.conf" >&2
+      fi
+      if [ -f "/etc/mosquitto/passwd" ]; then
+        echo "Password file exists: /etc/mosquitto/passwd" >&2
+        ls -la /etc/mosquitto/passwd >&2 || true
+      fi
+      echo "Directory permissions:" >&2
+      ls -lad /etc/mosquitto /var/lib/mosquitto /var/log/mosquitto 2>&1 || true
+      echo "" >&2
+      echo "=== Manual Start Test ===" >&2
+      echo "Trying to start mosquitto manually to see error message:" >&2
+      su -s /bin/sh mosquitto -c "/usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf" 2>&1 || true
+      echo "" >&2
+      echo "=== Check PID file location ===" >&2
+      if [ -f "/var/run/mosquitto.pid" ]; then
+        echo "PID file exists: /var/run/mosquitto.pid" >&2
+        ls -la /var/run/mosquitto.pid >&2 || true
+        cat /var/run/mosquitto.pid >&2 || true
+      else
+        echo "PID file does not exist: /var/run/mosquitto.pid" >&2
+        echo "Checking /var/run permissions:" >&2
+        ls -lad /var/run >&2 || true
+      fi
+    fi
+  elif [ "$USE_OPENRC" = "true" ]; then
+    echo "=== Service Status ===" >&2
+    rc-service "$SERVICE_NAME" status >&2 || true
+  else
+    echo "=== Service Status ===" >&2
+    systemctl status "$SERVICE_NAME" >&2 || true
+    echo "=== Journal Logs ===" >&2
+    journalctl -u "$SERVICE_NAME" -n 20 --no-pager >&2 || true
+  fi
+  exit 1
+fi
+
+# Output logfile path as JSON
+echo "[{\"id\": \"logfile_path\", \"value\": \"$LOGFILE\"}]"
+
+exit 0
+

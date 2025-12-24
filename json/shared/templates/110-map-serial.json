@@ -20,6 +20,22 @@
       "type": "string",
       "required": true,
       "description": "ID of the VM to which the USB device will be assigned"
+    },
+    {
+      "id": "uid",
+      "name": "UID",
+      "type": "string",
+      "required": false,
+      "advanced": true,
+      "description": "Optional: UID of the user in the container who should have access to the serial device. If provided, permissions will be set on the host device (mapped UID = container UID + 100000)."
+    },
+    {
+      "id": "gid",
+      "name": "GID",
+      "type": "string",
+      "required": false,
+      "advanced": true,
+      "description": "Optional: GID of the group in the container who should have access to the serial device. If provided, permissions will be set on the host device (mapped GID = container GID + 100000)."
     }
   ],
   "commands": [
