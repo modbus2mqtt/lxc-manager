@@ -214,39 +214,6 @@ fi
 # Enable and start service
 if [ "$USE_OPENRC" = "true" ]; then
   rc-update add "$SERVICE_NAME" default >&2
-  # For existing services (like mosquitto-openrc), ensure configuration file exists
-  # The mosquitto-openrc service uses: ${cfgfile:="/etc/mosquitto/${RC_SVCNAME#mosquitto.}.conf"}
-  # For RC_SVCNAME="mosquitto", this resolves to /etc/mosquitto/mosquitto.conf
-  if [ "$SERVICE_EXISTS" = "true" ] && [ "$SERVICE_NAME" = "mosquitto" ]; then
-    # Ensure the default config file exists (should be created by configure-mosquitto.json)
-    if [ ! -f "/etc/mosquitto/mosquitto.conf" ]; then
-      echo "Error: /etc/mosquitto/mosquitto.conf not found, but service exists. Configuration must be created before starting service." >&2
-      exit 1
-    fi
-    # Ensure mosquitto user can read the config file
-    if [ -f "/etc/mosquitto/mosquitto.conf" ]; then
-      chown mosquitto:mosquitto /etc/mosquitto/mosquitto.conf >&2 || true
-      chmod 644 /etc/mosquitto/mosquitto.conf >&2 || true
-    fi
-    # For unprivileged containers, /var/run or /run might not be writable by mosquitto user
-    # The mosquitto-openrc service uses pidfile="/run/$RC_SVCNAME.pid" in the init script
-    # But mosquitto itself tries to write the PID file from the config: pid_file /var/lib/mosquitto/mosquitto.pid
-    # There's a conflict: OpenRC expects /run/mosquitto.pid, but mosquitto config says /var/lib/mosquitto/mosquitto.pid
-    # The mosquitto binary will try to write to the location in the config file
-    # But OpenRC will also try to manage a PID file at /run/mosquitto.pid
-    # Solution: Ensure /var/lib/mosquitto exists and is writable (for mosquitto's PID file)
-    # OpenRC will handle /run/mosquitto.pid separately (it should create it as root)
-    if [ ! -d "/var/lib/mosquitto" ]; then
-      mkdir -p /var/lib/mosquitto >&2
-    fi
-    chown mosquitto:mosquitto /var/lib/mosquitto >&2 || true
-    chmod 755 /var/lib/mosquitto >&2 || true
-    # Also ensure /run exists (OpenRC needs it for its PID file management)
-    if [ ! -d "/run" ]; then
-      mkdir -p /run >&2
-    fi
-    chmod 755 /run >&2 || true
-  fi
   rc-service "$SERVICE_NAME" start >&2
 else
   systemctl enable "$SERVICE_NAME" >&2
@@ -256,56 +223,18 @@ fi
 # Verify that service is running
 if ! $SERVICE_STATUS_CMD "$SERVICE_NAME" >/dev/null 2>&1; then
   echo "Error: $SERVICE_NAME service failed to start" >&2
-  # For existing services, try to get more information about the failure
-  if [ "$SERVICE_EXISTS" = "true" ] && [ "$USE_OPENRC" = "true" ]; then
-    echo "=== Service Status ===" >&2
-    rc-service "$SERVICE_NAME" status >&2 || true
-    echo "" >&2
+  # Try to get more information about the failure
+  if [ -f "/var/log/$SERVICE_NAME.log" ]; then
     echo "=== Service Logs ===" >&2
-    # Try to get logs from the service
-    if [ -f "/var/log/mosquitto/mosquitto.log" ]; then
-      echo "Last 20 lines of /var/log/mosquitto/mosquitto.log:" >&2
-      tail -20 /var/log/mosquitto/mosquitto.log >&2 || true
-    fi
-    if [ -f "/var/log/$SERVICE_NAME.log" ]; then
-      echo "Last 20 lines of /var/log/$SERVICE_NAME.log:" >&2
-      tail -20 "/var/log/$SERVICE_NAME.log" >&2 || true
-    fi
+    echo "Last 20 lines of /var/log/$SERVICE_NAME.log:" >&2
+    tail -20 "/var/log/$SERVICE_NAME.log" >&2 || true
     echo "" >&2
-    echo "=== Process Check ===" >&2
-    ps aux | grep -i "$SERVICE_NAME" | grep -v grep >&2 || echo "No $SERVICE_NAME process found" >&2
-    echo "" >&2
-    echo "=== Configuration Check ===" >&2
-    if [ "$SERVICE_NAME" = "mosquitto" ]; then
-      if [ -f "/etc/mosquitto/mosquitto.conf" ]; then
-        echo "Configuration file exists: /etc/mosquitto/mosquitto.conf" >&2
-        ls -la /etc/mosquitto/mosquitto.conf >&2 || true
-      else
-        echo "Configuration file missing: /etc/mosquitto/mosquitto.conf" >&2
-      fi
-      if [ -f "/etc/mosquitto/passwd" ]; then
-        echo "Password file exists: /etc/mosquitto/passwd" >&2
-        ls -la /etc/mosquitto/passwd >&2 || true
-      fi
-      echo "Directory permissions:" >&2
-      ls -lad /etc/mosquitto /var/lib/mosquitto /var/log/mosquitto 2>&1 || true
-      echo "" >&2
-      echo "=== Manual Start Test ===" >&2
-      echo "Trying to start mosquitto manually to see error message:" >&2
-      su -s /bin/sh mosquitto -c "/usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf" 2>&1 || true
-      echo "" >&2
-      echo "=== Check PID file location ===" >&2
-      if [ -f "/var/run/mosquitto.pid" ]; then
-        echo "PID file exists: /var/run/mosquitto.pid" >&2
-        ls -la /var/run/mosquitto.pid >&2 || true
-        cat /var/run/mosquitto.pid >&2 || true
-      else
-        echo "PID file does not exist: /var/run/mosquitto.pid" >&2
-        echo "Checking /var/run permissions:" >&2
-        ls -lad /var/run >&2 || true
-      fi
-    fi
-  elif [ "$USE_OPENRC" = "true" ]; then
+  fi
+  echo "=== Process Check ===" >&2
+  ps aux | grep -i "$SERVICE_NAME" | grep -v grep >&2 || echo "No $SERVICE_NAME process found" >&2
+  echo "" >&2
+  
+  if [ "$USE_OPENRC" = "true" ]; then
     echo "=== Service Status ===" >&2
     rc-service "$SERVICE_NAME" status >&2 || true
   else

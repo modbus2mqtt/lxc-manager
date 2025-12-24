@@ -38,6 +38,105 @@ export class WebAppVE {
     }
   }
 
+  /**
+   * Handles incoming execution messages and updates the messages array.
+   * Merges partial messages with existing ones and handles final message updates.
+   */
+  private handleExecutionMessage(
+    msg: IVeExecuteMessage,
+    application: string,
+    task: string,
+    restartKey: string,
+  ): void {
+    const existing = this.messages.find(
+      (g) => g.application === application && g.task === task,
+    );
+    if (existing) {
+      // Check if message with same index already exists
+      if (msg.index !== undefined) {
+        const existingMsg = existing.messages.find(m => m.index === msg.index);
+        if (existingMsg) {
+          // If this is a partial message, append stderr/stdout to existing message
+          if (msg.partial === true) {
+            existingMsg.stderr = (existingMsg.stderr || "") + (msg.stderr || "");
+            if (msg.result) {
+              existingMsg.result = (existingMsg.result || "") + (msg.result || "");
+            }
+            // Update other fields if provided
+            if (msg.exitCode !== undefined) {
+              existingMsg.exitCode = msg.exitCode;
+              // Reset error flag if exitCode is 0 (success)
+              if (msg.exitCode === 0) {
+                existingMsg.error = undefined;
+              }
+            }
+            // Update error flag if explicitly provided
+            if (msg.error !== undefined) {
+              existingMsg.error = msg.error;
+            }
+            return; // Don't add as new message, just update existing
+          } else {
+            // Non-partial message with same index: replace existing message
+            // This happens when a final message replaces a partial one
+            const index = existing.messages.indexOf(existingMsg);
+            if (index >= 0) {
+              // Update existing message with final values
+              existing.messages[index] = {
+                ...existingMsg,
+                ...msg,
+                // Preserve accumulated stderr/result from partial messages
+                stderr: (existingMsg.stderr || "") + (msg.stderr || ""),
+                result: msg.result || existingMsg.result,
+                // Reset error flag if exitCode is 0 (success)
+                error: msg.exitCode === 0 ? undefined : (msg.error !== undefined ? msg.error : existingMsg.error),
+              };
+            }
+            return; // Don't add as new message, just update existing
+          }
+        }
+      }
+      // For partial messages without index, try to append to last message with same command name
+      if (msg.partial === true && msg.index === undefined) {
+        // Find last message with same command name
+        for (let i = existing.messages.length - 1; i >= 0; i--) {
+          const lastMsg = existing.messages[i];
+          if (lastMsg && lastMsg.command === msg.command) {
+            // Append stderr/stdout to last message
+            lastMsg.stderr = (lastMsg.stderr || "") + (msg.stderr || "");
+            if (msg.result) {
+              lastMsg.result = (lastMsg.result || "") + (msg.result || "");
+            }
+            // Update partial flag if not already set
+            if (lastMsg.partial === undefined) {
+              lastMsg.partial = true;
+            }
+            // Update exitCode and error flag if provided
+            if (msg.exitCode !== undefined) {
+              lastMsg.exitCode = msg.exitCode;
+              // Reset error flag if exitCode is 0 (success)
+              if (msg.exitCode === 0) {
+                lastMsg.error = undefined;
+              }
+            }
+            // Update error flag if explicitly provided
+            if (msg.error !== undefined) {
+              lastMsg.error = msg.error;
+            }
+            return; // Don't add as new message, just update existing
+          }
+        }
+      }
+      existing.messages.push(msg);
+    } else {
+      this.messages.push({
+        application,
+        task,
+        messages: [msg],
+        restartKey,
+      });
+    }
+  }
+
   returnResponse<T>(
     res: express.Response,
     payload: T,
@@ -181,8 +280,22 @@ export class WebAppVE {
                   }
                   return; // Don't add as new message, just update existing
                 } else {
-                  // Non-partial message with same index: skip duplicate
-                  return;
+                  // Non-partial message with same index: replace existing message
+                  // This happens when a final message replaces a partial one
+                  const index = existing.messages.indexOf(existingMsg);
+                  if (index >= 0) {
+                    // Update existing message with final values
+                    existing.messages[index] = {
+                      ...existingMsg,
+                      ...msg,
+                      // Preserve accumulated stderr/result from partial messages
+                      stderr: (existingMsg.stderr || "") + (msg.stderr || ""),
+                      result: msg.result || existingMsg.result,
+                      // Reset error flag if exitCode is 0 (success)
+                      error: msg.exitCode === 0 ? undefined : (msg.error !== undefined ? msg.error : existingMsg.error),
+                    };
+                  }
+                  return; // Don't add as new message, just update existing
                 }
               }
             }
@@ -341,79 +454,7 @@ export class WebAppVE {
       this.messageTimestamps.set(messageKey, Date.now());
 
       exec.on("message", (msg: IVeExecuteMessage) => {
-        const existing = this.messages.find(
-          (g) => g.application === application && g.task === task,
-        );
-        if (existing) {
-          // Check if message with same index already exists
-          if (msg.index !== undefined) {
-            const existingMsg = existing.messages.find(m => m.index === msg.index);
-            if (existingMsg) {
-              // If this is a partial message, append stderr/stdout to existing message
-              if (msg.partial === true) {
-                existingMsg.stderr = (existingMsg.stderr || "") + (msg.stderr || "");
-                if (msg.result) {
-                  existingMsg.result = (existingMsg.result || "") + (msg.result || "");
-                }
-                // Update other fields if provided
-                if (msg.exitCode !== undefined) {
-                  existingMsg.exitCode = msg.exitCode;
-                  // Reset error flag if exitCode is 0 (success)
-                  if (msg.exitCode === 0) {
-                    existingMsg.error = false;
-                  }
-                }
-                // Update error flag if explicitly provided
-                if (msg.error !== undefined) {
-                  existingMsg.error = msg.error;
-                }
-                return; // Don't add as new message, just update existing
-              } else {
-                // Non-partial message with same index: skip duplicate
-                return;
-              }
-            }
-          }
-          // For partial messages without index, try to append to last message with same command name
-          if (msg.partial === true && msg.index === undefined) {
-            // Find last message with same command name
-            for (let i = existing.messages.length - 1; i >= 0; i--) {
-              const lastMsg = existing.messages[i];
-              if (lastMsg && lastMsg.command === msg.command) {
-                // Append stderr/stdout to last message
-                lastMsg.stderr = (lastMsg.stderr || "") + (msg.stderr || "");
-                if (msg.result) {
-                  lastMsg.result = (lastMsg.result || "") + (msg.result || "");
-                }
-                // Update partial flag if not already set
-                if (lastMsg.partial === undefined) {
-                  lastMsg.partial = true;
-                }
-                // Update exitCode and error flag if provided
-                if (msg.exitCode !== undefined) {
-                  lastMsg.exitCode = msg.exitCode;
-                  // Reset error flag if exitCode is 0 (success)
-                  if (msg.exitCode === 0) {
-                    lastMsg.error = false;
-                  }
-                }
-                // Update error flag if explicitly provided
-                if (msg.error !== undefined) {
-                  lastMsg.error = msg.error;
-                }
-                return; // Don't add as new message, just update existing
-              }
-            }
-          }
-          existing.messages.push(msg);
-        } else {
-          this.messages.push({
-            application,
-            task,
-            messages: [msg],
-            restartKey: newRestartKey,
-          });
-        }
+        this.handleExecutionMessage(msg, application, task, newRestartKey);
       });
       exec.on("finished", (msg: IVMContext) => {
         veCtxToUse.getStorageContext().setVMContext(msg);

@@ -10,7 +10,6 @@
     "210-wait-for-container-ready.json",
     "305-set-pkg-mirror.json",
     "330-install-packages.json",
-    "400-configure-mosquitto.json",
-    "350-create-enable-service.json"
+    "configure-start-mosquitto.json"
   ]
 }

@@ -1,6 +1,6 @@
 {
   "execute_on": "lxc",
-  "name": "Install Modbus2Mqtt",
+  "name": "Download Package",
   "description": "Install modbus2mqtt on lxc container",
   "parameters": [
     {

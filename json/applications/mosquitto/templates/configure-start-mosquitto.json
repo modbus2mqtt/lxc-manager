@@ -64,19 +64,12 @@
       "name": "CA Certificate",
       "type": "string",
       "required": false,
-      "description": "Base64-encoded CA certificate content"
-    },
-    {
-      "id": "ca_key",
-      "name": "CA Private Key",
-      "type": "string",
-      "required": false,
-      "description": "Base64-encoded CA private key content"
+      "description": "Base64-encoded CA certificate content (for client certificate authentication)"
     }
   ],
   "commands": [
     {
-      "script": "configure-mosquitto.sh",
+      "script": "configure-start-mosquitto.sh",
       "description": "Configure Mosquitto with authentication settings"
     }
   ]
