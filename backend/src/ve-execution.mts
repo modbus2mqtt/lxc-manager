@@ -1,87 +1,20 @@
 import { EventEmitter } from "events";
-import { ICommand, IVeExecuteMessage } from "@src/types.mjs";
+import { ICommand, IVeExecuteMessage } from "./types.mjs";
 import fs from "node:fs";
-import path from "node:path";
-import { spawn, SpawnOptionsWithoutStdio } from "node:child_process";
-
-function spawnAsync(
-  cmd: string,
-  args: string[],
-  options: SpawnOptionsWithoutStdio & { 
-    input?: string; 
-    timeout?: number;
-    onStdout?: (chunk: string) => void;
-    onStderr?: (chunk: string) => void;
-  },
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  return new Promise((resolve) => {
-    const proc = spawn(cmd, args, { ...options, stdio: "pipe" });
-    let stdout = "";
-    let stderr = "";
-    let timeoutId: NodeJS.Timeout | undefined;
-
-    if (options.input) {
-      proc.stdin?.write(options.input);
-      proc.stdin?.end();
-    }
-
-    proc.stdout?.on("data", (d) => {
-      const chunk = d.toString();
-      stdout += chunk;
-      if (options.onStdout) {
-        options.onStdout(chunk);
-      }
-    });
-    proc.stderr?.on("data", (d) => {
-      const chunk = d.toString();
-      stderr += chunk;
-      if (options.onStderr) {
-        options.onStderr(chunk);
-      }
-    });
-
-    let killTimeoutId: NodeJS.Timeout | undefined;
-    if (options.timeout) {
-      timeoutId = setTimeout(() => {
-        proc.kill("SIGTERM");
-        // If process doesn't terminate within 2 seconds after SIGTERM, force kill with SIGKILL
-        killTimeoutId = setTimeout(() => {
-          try {
-            proc.kill("SIGKILL");
-          } catch {
-            // Process may already be dead, ignore
-          }
-        }, 2000);
-      }, options.timeout);
-    }
-
-    proc.on("close", (exitCode) => {
-      if (timeoutId) clearTimeout(timeoutId);
-      if (killTimeoutId) clearTimeout(killTimeoutId);
-      resolve({ stdout, stderr, exitCode: exitCode ?? -1 });
-    });
-
-    proc.on("error", () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      if (killTimeoutId) clearTimeout(killTimeoutId);
-      resolve({ stdout, stderr, exitCode: -1 });
-    });
-  });
-}
-import { JsonError, JsonValidator } from "./jsonvalidator.mjs";
-import { StorageContext, VMContext } from "./storagecontext.mjs";
 import { IVEContext, IVMContext } from "./backend-types.mjs";
+import { StorageContext, VMContext } from "./storagecontext.mjs";
+import { VariableResolver } from "./variable-resolver.mts";
+import { OutputProcessor, IOutput } from "./output-processor.mts";
+import { spawnAsync } from "./spawn-utils.mjs";
+import { JsonError } from "./jsonvalidator.mjs";
+
 export interface IProxmoxRunResult {
   lastSuccessIndex: number;
 }
 
-let index = 0;
-// Generated from outputs.schema.json
-export interface IOutput {
-  id: string;
-  value?: string;
-  default?: string;
-}
+// Re-export IOutput for backward compatibility
+export type { IOutput };
+
 export interface IRestartInfo {
   vm_id?: string | number | undefined;
   lastSuccessfull: number;
@@ -89,6 +22,9 @@ export interface IRestartInfo {
   outputs: { name: string; value: string | number | boolean }[];
   defaults: { name: string; value: string | number | boolean }[];
 }
+
+let index = 0;
+
 /**
  * ProxmoxExecution: Executes a list of ICommand objects with variable substitution and remote/container execution.
  */
@@ -97,8 +33,9 @@ export class VeExecution extends EventEmitter {
   private inputs!: Record<string, string | number | boolean>;
   public outputs: Map<string, string | number | boolean> = new Map();
   private outputsRaw?: { name: string; value: string | number | boolean }[];
-  private validator: JsonValidator;
   private scriptTimeoutMs: number;
+  private variableResolver: VariableResolver;
+  private outputProcessor: OutputProcessor;
   
   constructor(
     commands: ICommand[],
@@ -113,7 +50,6 @@ export class VeExecution extends EventEmitter {
     for (const inp of inputs) {
       this.inputs[inp.id] = inp.value;
     }
-    this.validator = StorageContext.getInstance().getJsonValidator();
     
     // Get timeout from environment variable, default to 2 minutes (120000 ms)
     const envTimeout = process.env.LXC_MANAGER_SCRIPT_TIMEOUT;
@@ -127,6 +63,19 @@ export class VeExecution extends EventEmitter {
     } else {
       this.scriptTimeoutMs = 120000; // Default 2 minutes
     }
+
+    // Initialize helper classes
+    this.variableResolver = new VariableResolver(
+      () => this.outputs,
+      () => this.inputs,
+      () => this.defaults,
+    );
+    this.outputProcessor = new OutputProcessor(
+      this.outputs,
+      this.outputsRaw,
+      this.defaults,
+      this.sshCommand,
+    );
   }
 
   /**
@@ -139,7 +88,7 @@ export class VeExecution extends EventEmitter {
   protected async runOnVeHost(
     input: string,
     tmplCommand: ICommand,
-    timeoutMs?: number, // Uses scriptTimeoutMs if not provided
+    timeoutMs?: number,
     remoteCommand?: string[],
   ): Promise<IVeExecuteMessage> {
     // Use provided timeout or fall back to scriptTimeoutMs
@@ -275,77 +224,14 @@ export class VeExecution extends EventEmitter {
           msg.partial = false;
           this.emit("message", msg);
         }
-      }
-
-      try {
-        // Strip banner text by finding the unique marker we prepended
-        // Everything before the marker is banner text (SSH MOTD, etc.)
-        let cleaned = stdout.trim();
-        const markerIndex = cleaned.indexOf(UNIQUE_MARKER);
-
-        if (markerIndex >= 0) {
-          // Remove everything up to and including the marker and the newline after it
-          cleaned = cleaned.slice(markerIndex + UNIQUE_MARKER.length).trim();
+      } else {
+        // Parse and update outputs
+        this.outputProcessor.parseAndUpdateOutputs(stdout, tmplCommand, UNIQUE_MARKER);
+        // Check if outputsRaw was updated
+        const outputsRawResult = this.outputProcessor.getOutputsRawResult();
+        if (outputsRawResult) {
+          this.outputsRaw = outputsRawResult;
         }
-
-        if (cleaned.length != 0) {
-          const parsed = JSON.parse(cleaned);
-          // Validate against schema; may be one of:
-          // - IOutput
-          // - IOutput[]
-          // - Array<{name, value}>
-          const outputsJson = this.validator.serializeJsonWithSchema<any>(
-            parsed,
-            "outputs",
-            "Outputs " + tmplCommand.name,
-          );
-
-          if (Array.isArray(outputsJson)) {
-            const first = outputsJson[0];
-            if (
-              first &&
-              typeof first === "object" &&
-              "name" in first &&
-              !("id" in first)
-            ) {
-              // name/value array: pass through 1:1 to outputsRaw and also map for substitutions
-              this.outputsRaw = [];
-              for (const nv of outputsJson as {
-                name: string;
-                value: string | number | boolean;
-              }[]) {
-                const processedValue = this.processLocalFileValue(nv.value);
-                this.outputsRaw.push({ name: nv.name, value: processedValue });
-                this.outputs.set(nv.name, processedValue);
-              }
-            } else {
-              // Array of outputObject {id, value}
-              for (const entry of outputsJson as IOutput[]) {
-                if (entry.value !== undefined) {
-                  const processedValue = this.processLocalFileValue(
-                    entry.value,
-                  );
-                  this.outputs.set(entry.id, processedValue);
-                }
-                if ((entry as any).default !== undefined)
-                  this.defaults.set(entry.id, (entry as any).default as any);
-              }
-            }
-          } else if (typeof outputsJson === "object" && outputsJson !== null) {
-            const obj = outputsJson as IOutput;
-            if (obj.value !== undefined) {
-              const processedValue = this.processLocalFileValue(obj.value);
-              this.outputs.set(obj.id, processedValue);
-            }
-            if ((obj as any).default !== undefined)
-              this.defaults.set(obj.id, (obj as any).default as any);
-          }
-        }
-      } catch (e) {
-        msg.index = index;
-        msg.commandtext = stdout;
-        msg.stderr = stderr;
-        throw e;
       }
     } catch (e: any) {
       msg.index = index;
@@ -376,7 +262,7 @@ export class VeExecution extends EventEmitter {
     vm_id: string | number,
     command: string,
     tmplCommand: ICommand,
-    timeoutMs?: number, // Uses scriptTimeoutMs if not provided
+    timeoutMs?: number,
   ): Promise<IVeExecuteMessage> {
     // Pass command and arguments as array
     let lxcCmd: string[] | undefined = ["lxc-attach", "-n", String(vm_id)];
@@ -442,11 +328,11 @@ export class VeExecution extends EventEmitter {
     if (!pveOk || !vmidOk)
       throw new Error("PVE or VMID mismatch between host data and VMContext");
     // Replace variables with vmctx.data for host execution
-    var execCmd = this.replaceVarsWithContext(
+    let execCmd = this.variableResolver.replaceVarsWithContext(
       command,
       (vmctx as any).data || {},
     );
-    execCmd = this.replaceVarsWithContext(
+    execCmd = this.variableResolver.replaceVarsWithContext(
       execCmd,
       Object.fromEntries(this.outputs) || {},
     );
@@ -479,6 +365,12 @@ export class VeExecution extends EventEmitter {
       for (const def of restartInfo.defaults) {
         this.defaults.set(def.name, def.value);
       }
+      // Re-initialize variable resolver with updated state
+      this.variableResolver = new VariableResolver(
+        () => this.outputs,
+        () => this.inputs,
+        () => this.defaults,
+      );
     }
     outerloop: for (let i = startIdx; i < this.commands.length; ++i) {
       const cmd = this.commands[i];
@@ -512,7 +404,7 @@ export class VeExecution extends EventEmitter {
                   let value = entry.value;
                   // Replace variables in value if it's a string
                   if (typeof value === "string") {
-                    value = this.replaceVars(value);
+                    value = this.variableResolver.replaceVars(value);
                     // Skip property if value is "NOT_DEFINED" (optional parameter not set)
                     if (value === "NOT_DEFINED") {
                       continue; // Skip this property
@@ -530,7 +422,7 @@ export class VeExecution extends EventEmitter {
                 let value = cmd.properties.value;
                 // Replace variables in value if it's a string
                 if (typeof value === "string") {
-                  value = this.replaceVars(value);
+                  value = this.variableResolver.replaceVars(value);
                   // Skip property if value is "NOT_DEFINED" (optional parameter not set)
                   if (value === "NOT_DEFINED") {
                     continue; // Skip this property, don't set it in outputs
@@ -578,7 +470,7 @@ export class VeExecution extends EventEmitter {
         switch (cmd.execute_on) {
           case "lxc":
             // For lxc path, perform default variable replacement
-            const execStrLxc = this.replaceVars(rawStr);
+            const execStrLxc = this.variableResolver.replaceVars(rawStr);
             let vm_id: string | number | undefined = undefined;
             if (
               typeof this.inputs["vm_id"] === "string" ||
@@ -609,7 +501,7 @@ export class VeExecution extends EventEmitter {
             break;
           case "ve":
             // Default replacement for direct ve execution
-            const execStrVe = this.replaceVars(rawStr);
+            const execStrVe = this.variableResolver.replaceVars(rawStr);
             lastMsg = await this.runOnVeHost(execStrVe, cmd);
             break;
           default:
@@ -753,6 +645,7 @@ export class VeExecution extends EventEmitter {
     }
     return rcRestartInfo;
   }
+
   buildVmContext(): IVMContext {
     if (!this.veContext) {
       throw new Error("VE context not set");
@@ -776,156 +669,22 @@ export class VeExecution extends EventEmitter {
   }
 
   /**
-   * Processes a value: if it's a string starting with "local:", reads the file and returns base64 encoded content.
-   * Only processes files when executing locally (sshCommand !== "ssh"). When executing on VE host,
-   * the "local:" prefix is preserved so the file can be read on the VE host.
-   */
-  private processLocalFileValue(
-    value: string | number | boolean,
-  ): string | number | boolean {
-    if (typeof value === "string" && value.startsWith("local:")) {
-      // Only process local files when executing locally (e.g., in tests)
-      // When executing on VE host, preserve the "local:" prefix so the file can be read on the VE host
-      if (this.sshCommand !== "ssh") {
-        const filePath = value.substring(6); // Remove "local:" prefix
-        const storageContext = StorageContext.getInstance();
-        const localPath = storageContext.getLocalPath();
-        const fullPath = path.join(localPath, filePath);
-        try {
-          const fileContent = fs.readFileSync(fullPath);
-          return fileContent.toString("base64");
-        } catch (err: any) {
-          throw new Error(`Failed to read file ${fullPath}: ${err.message}`);
-        }
-      }
-      // When executing on VE host, return the value as-is (with "local:" prefix)
-      // The file will be read on the VE host, not locally
-    }
-    return value;
-  }
-
-  /**
    * Replaces {{var}} in a string with values from inputs or outputs.
+   * @internal For backward compatibility and testing
    */
   private replaceVars(str: string): string {
-    return this.replaceVarsWithContext(str, {});
-  }
-
-  /**
-   * Resolves a list variable by collecting all entries that start with "list.<varName>."
-   * from context, outputs, inputs, and defaults, then formats them as a newline-separated
-   * list of "parameter-id=value" lines.
-   * 
-   * Example:
-   * - list.volumes.volume1 = "/var/libs/myapp/data"
-   * - list.volumes.volume2 = "/var/libs/myapp/log"
-   * - resolveListVariable("volumes", ctx) returns:
-   *   volume1=/var/libs/myapp/data
-   *   volume2=/var/libs/myapp/log
-   * 
-   * @param varName The variable name (e.g., "volumes" for {{ volumes }})
-   * @param ctx The context map to check first
-   * @returns The formatted list string, or null if no list entries found
-   */
-  private resolveListVariable(
-    varName: string,
-    ctx: Record<string, any>,
-  ): string | null {
-    const listPrefix = `list.${varName}.`;
-    
-    // Collect all matching entries from context, outputs, inputs, and defaults
-    const listEntries: Array<{ key: string; value: string }> = [];
-    
-    // Check context first
-    if (ctx) {
-      for (const [key, value] of Object.entries(ctx)) {
-        if (key.startsWith(listPrefix) && value !== undefined && value !== null) {
-          const paramId = key.substring(listPrefix.length);
-          listEntries.push({ key: paramId, value: String(value) });
-        }
-      }
-    }
-    
-    // Check outputs
-    for (const [key, value] of this.outputs.entries()) {
-      if (key.startsWith(listPrefix) && value !== undefined && value !== null) {
-        const paramId = key.substring(listPrefix.length);
-        // Avoid duplicates (context takes precedence)
-        if (!listEntries.some(e => e.key === paramId)) {
-          listEntries.push({ key: paramId, value: String(value) });
-        }
-      }
-    }
-    
-    // Check inputs
-    for (const [key, value] of Object.entries(this.inputs)) {
-      if (key.startsWith(listPrefix) && value !== undefined && value !== null) {
-        const paramId = key.substring(listPrefix.length);
-        // Avoid duplicates (context and outputs take precedence)
-        if (!listEntries.some(e => e.key === paramId)) {
-          listEntries.push({ key: paramId, value: String(value) });
-        }
-      }
-    }
-    
-    // Check defaults
-    for (const [key, value] of this.defaults.entries()) {
-      if (key.startsWith(listPrefix) && value !== undefined && value !== null) {
-        const paramId = key.substring(listPrefix.length);
-        // Avoid duplicates (context, outputs, and inputs take precedence)
-        if (!listEntries.some(e => e.key === paramId)) {
-          listEntries.push({ key: paramId, value: String(value) });
-        }
-      }
-    }
-    
-    // If we found list entries, format them as "key=value" lines
-    if (listEntries.length > 0) {
-      // Sort by key for consistent output
-      listEntries.sort((a, b) => a.key.localeCompare(b.key));
-      return listEntries.map(e => `${e.key}=${e.value}`).join('\n');
-    }
-    
-    return null;
+    return this.variableResolver.replaceVars(str);
   }
 
   /**
    * Replace variables using a provided context map first (e.g., vmctx.data),
    * then fall back to outputs, inputs, and defaults.
-   * 
-   * Special handling for list variables: Variables like {{ volumes }} will collect
-   * all outputs/inputs/defaults that start with "list.volumes." and format them
-   * as a newline-separated list of "parameter-id=value" lines.
-   * 
-   * Example:
-   * - list.volumes.volume1 = "/var/libs/myapp/data"
-   * - list.volumes.volume2 = "/var/libs/myapp/log"
-   * - {{ volumes }} becomes:
-   *   volume1=/var/libs/myapp/data
-   *   volume2=/var/libs/myapp/log
+   * @internal For backward compatibility
    */
   protected replaceVarsWithContext(
     str: string,
     ctx: Record<string, any>,
   ): string {
-    return str.replace(/{{\s*([^}\s]+)\s*}}/g, (_: string, v: string) => {
-      // Try to resolve as list variable first
-      const listResult = this.resolveListVariable(v, ctx);
-      if (listResult !== null) {
-        return listResult;
-      }
-      
-      // Fall back to regular variable resolution
-      if (ctx && Object.prototype.hasOwnProperty.call(ctx, v)) {
-        const val = ctx[v];
-        if (val !== undefined && val !== null) return String(val);
-      }
-      if (this.outputs.has(v)) return String(this.outputs.get(v));
-      if (this.inputs[v] !== undefined) return String(this.inputs[v]);
-      if (this.defaults.has(v)) return String(this.defaults.get(v));
-      // Return "NOT_DEFINED" for undefined variables instead of throwing error
-      // Scripts must check for this value and generate appropriate error messages
-      return "NOT_DEFINED";
-    });
+    return this.variableResolver.replaceVarsWithContext(str, ctx);
   }
 }
