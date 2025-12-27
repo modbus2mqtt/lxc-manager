@@ -8,7 +8,8 @@
 
 set -eu
 
-# Timeout for commands that might hang (5 seconds)
+# Timeout for commands that might hang
+# Reduced timeouts for faster failure in test contexts
 TIMEOUT_CMD="timeout"
 if ! command -v timeout >/dev/null 2>&1; then
   # Fallback: use gtimeout on macOS or skip timeout
@@ -21,7 +22,7 @@ fi
 
 # Helper function to run command with timeout
 run_with_timeout() {
-  local timeout_sec="${1:-5}"
+  local timeout_sec="${1:-1}"
   shift
   if [ -n "$TIMEOUT_CMD" ]; then
     $TIMEOUT_CMD "$timeout_sec" "$@" 2>/dev/null || return 1
@@ -34,7 +35,7 @@ run_with_timeout() {
   fi
 }
 
-# Early check: if lsblk is not available, exit with error
+# Early check: if lsblk is not available, exit with error immediately
 # This ensures the script fails in test contexts where hardware tools are not available
 if ! command -v lsblk >/dev/null 2>&1; then
   echo "Error: lsblk command not found. This script requires lsblk to list block devices." >&2
@@ -44,22 +45,29 @@ fi
 # Additional check: if we're running in a test context (no real hardware access),
 # try to detect this and fail early. This happens when running with sshCommand != "ssh"
 # Check if we can actually access /sys/block (indicator of real system vs test environment)
+# This check is done BEFORE any potentially slow commands to fail fast
 if [ ! -d "/sys/block" ] || [ ! -r "/sys/block" ]; then
   echo "Error: Cannot access /sys/block. This script requires access to system block devices." >&2
   exit 1
 fi
 
-# Get list of mounted device paths
-MOUNTED_DEVICES=$(run_with_timeout 2 mount | awk '{print $1}' | grep -E '^/dev/' | sort -u || echo "")
+# Early check for other required commands to fail fast
+if ! command -v mount >/dev/null 2>&1; then
+  echo "Error: mount command not found." >&2
+  exit 1
+fi
 
-# Get list of currently imported ZFS pools
-IMPORTED_POOLS=$(run_with_timeout 2 zpool list -H -o name 2>/dev/null || echo "")
+# Get list of mounted device paths (reduced timeout for faster failure in test contexts)
+MOUNTED_DEVICES=$(run_with_timeout 1 mount | awk '{print $1}' | grep -E '^/dev/' | sort -u || echo "")
+
+# Get list of currently imported ZFS pools (reduced timeout for faster failure in test contexts)
+IMPORTED_POOLS=$(run_with_timeout 1 zpool list -H -o name 2>/dev/null || echo "")
 
 # Process each partition
 FIRST=true
 printf '['
 
-run_with_timeout 5 lsblk -n -o NAME,TYPE,FSTYPE,SIZE,MOUNTPOINT 2>/dev/null | {
+run_with_timeout 2 lsblk -n -o NAME,TYPE,FSTYPE,SIZE,MOUNTPOINT 2>/dev/null | {
   while IFS= read -r line; do
     NAME=$(echo "$line" | awk '{print $1}')
     TYPE=$(echo "$line" | awk '{print $2}')
@@ -87,9 +95,9 @@ run_with_timeout 5 lsblk -n -o NAME,TYPE,FSTYPE,SIZE,MOUNTPOINT 2>/dev/null | {
       continue
     else
       # Traditional filesystem - get FSTYPE and UUID
-      # If lsblk didn't provide FSTYPE, try to get it from blkid
+      # If lsblk didn't provide FSTYPE, try to get it from blkid (reduced timeout)
       if [ -z "$FSTYPE" ] || [ "$FSTYPE" = "" ]; then
-        FSTYPE=$(run_with_timeout 2 blkid -s TYPE -o value "/dev/$NAME" 2>/dev/null || echo "")
+        FSTYPE=$(run_with_timeout 1 blkid -s TYPE -o value "/dev/$NAME" 2>/dev/null || echo "")
       fi
       
       # Skip if no filesystem type (unformatted partition)
@@ -97,8 +105,8 @@ run_with_timeout 5 lsblk -n -o NAME,TYPE,FSTYPE,SIZE,MOUNTPOINT 2>/dev/null | {
         continue
       fi
       
-      # Get UUID for this partition
-      UUID=$(run_with_timeout 2 blkid -s UUID -o value "/dev/$NAME" 2>/dev/null || echo "")
+      # Get UUID for this partition (reduced timeout)
+      UUID=$(run_with_timeout 1 blkid -s UUID -o value "/dev/$NAME" 2>/dev/null || echo "")
       
       # Skip if no UUID found
       if [ -z "$UUID" ] || [ "$UUID" = "" ]; then
@@ -137,8 +145,8 @@ if [ -n "$IMPORTED_POOLS" ]; then
         continue
       fi
       
-      # Get pool mountpoint
-      POOL_MOUNTPOINT=$(run_with_timeout 2 zfs get -H -o value mountpoint "$POOL_NAME" 2>/dev/null || echo "")
+      # Get pool mountpoint (reduced timeout)
+      POOL_MOUNTPOINT=$(run_with_timeout 1 zfs get -H -o value mountpoint "$POOL_NAME" 2>/dev/null || echo "")
       
       # Only include pools that have a valid mountpoint (not "none" or "-")
       if [ "$POOL_MOUNTPOINT" = "none" ] || [ "$POOL_MOUNTPOINT" = "-" ]; then
@@ -150,8 +158,8 @@ if [ -n "$IMPORTED_POOLS" ]; then
         continue
       fi
       
-      # Get pool size
-      POOL_SIZE=$(run_with_timeout 2 zpool list -H -o size "$POOL_NAME" 2>/dev/null || echo "")
+      # Get pool size (reduced timeout)
+      POOL_SIZE=$(run_with_timeout 1 zpool list -H -o size "$POOL_NAME" 2>/dev/null || echo "")
       
       # Create descriptive name
       if [ -n "$POOL_SIZE" ] && [ "$POOL_SIZE" != "" ]; then
