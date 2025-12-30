@@ -1,13 +1,21 @@
 #!/bin/sh
-# Usage: create-user.sh <username> [uid] [gid]
+# Create a system user (runs inside the container)
 #
-# create-user.sh: Creates a user with specified username, optional UID, optional GID, and home directory (no password, no login).
-# Supports both Alpine Linux (addgroup/adduser) and Debian/Ubuntu (groupadd/useradd).
+# This script creates a system user by:
+# 1. Creating group with optional GID
+# 2. Creating user with optional UID
+# 3. Setting up home directory
+# 4. Configuring user without password and login shell
 #
-# - Creates group and user if not present
-# - Sets up home directory
-# - UID and GID are optional; if not provided, the system will assign them automatically
+# Supports both Alpine Linux (addgroup/adduser) and Debian/Ubuntu (groupadd/useradd)
 #
+# Requires:
+#   - username: Username to create (required)
+#   - uid: User ID (optional, system assigns if not provided)
+#   - gid: Group ID (optional, system assigns if not provided)
+#
+# Output: JSON to stdout (errors to stderr)
+exec >&2
 # All output is sent to stderr. Script is POSIX-compliant and produces no output on stdout.
 set -e
 USERNAME="{{ username }}"

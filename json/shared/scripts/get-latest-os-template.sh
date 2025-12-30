@@ -1,4 +1,17 @@
 #!/bin/sh
+# Get latest OS template for Proxmox
+#
+# This script downloads the latest OS template by:
+# 1. Finding the latest template matching the specified OS type
+# 2. Checking if template is already present in local storage
+# 3. Downloading template if not present
+#
+# Requires:
+#   - ostype: Operating system type (e.g., alpine, debian, ubuntu) (from context)
+#   - storage: Storage name (optional, defaults to "local")
+#
+# Output: JSON to stdout (errors to stderr)
+exec >&2
 
 # Name of the local storage
 STORAGE="local"

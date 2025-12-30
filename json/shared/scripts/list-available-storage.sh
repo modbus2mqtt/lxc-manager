@@ -1,10 +1,20 @@
 #!/bin/sh
 # List available storage options on the VE host
-# Outputs JSON array of objects with name and value for enumValues
-# Format: [{"name":"short description","value":"uuid:... or zfs:..."}, ...]
-# For filesystems: only unmounted partitions are included
-# For ZFS pools: only mounted pools are included (as they are always mounted in Proxmox)
-# Values are prefixed: uuid: for filesystems, zfs: for ZFS pools
+#
+# This script lists available storage by:
+# 1. Scanning for unmounted block devices (by UUID)
+# 2. Scanning for mounted ZFS pools
+# 3. Formatting as JSON array for enumValues
+#
+# Output format: JSON array of objects with name and value fields
+# Example: [{"name":"sda1 (ext4)","value":"uuid:1234-5678"}, {"name":"tank (ZFS)","value":"zfs:tank"}, ...]
+#
+# Note:
+#   - For filesystems: only unmounted partitions are included
+#   - For ZFS pools: only mounted pools are included (as they are always mounted in Proxmox)
+#   - Values are prefixed: uuid: for filesystems, zfs: for ZFS pools
+#
+# Output: JSON to stdout (errors to stderr)
 
 set -eu
 

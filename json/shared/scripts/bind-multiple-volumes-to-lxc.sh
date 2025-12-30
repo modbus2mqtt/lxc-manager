@@ -1,11 +1,25 @@
 #!/bin/sh
+# Bind multiple host directories to an LXC container
 #
-# bind-multiple-volumes-to-lxc.sh: Binds multiple host directories to an LXC container.
+# This script binds multiple volumes to an LXC container by:
+# 1. Parsing volumes (key=value format, one per line)
+# 2. Creating host directories under <base_path>/<hostname>/<key>
+# 3. Creating bind mounts from host to container paths
+# 4. Setting proper ownership and permissions
 #
-# - Parses volumes (key=value format, one per line)
-# - For each volume, creates a bind mount from <base_path>/<hostname>/<key> to /<value> in the container
+# Requires:
+#   - vm_id: LXC container ID (from context)
+#   - hostname: Container hostname (from context)
+#   - volumes: Volume mappings in key=value format, one per line (required)
+#   - base_path: Base path for host directories (optional)
+#   - host_mountpoint: Host mountpoint base (optional)
+#   - username: Username for ownership (optional)
+#   - uid: User ID (optional)
+#   - gid: Group ID (optional)
 #
-# All output is sent to stderr. Script is idempotent and can be run multiple times safely.
+# Script is idempotent and can be run multiple times safely.
+#
+# Output: JSON to stdout (errors to stderr)
 
 VMID="{{ vm_id}}"
 HOSTNAME="{{ hostname}}"

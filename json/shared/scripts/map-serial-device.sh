@@ -1,7 +1,24 @@
 #!/bin/sh
 # Map serial device to LXC container
-# Requires: usb_bus_device in format bus:device
+#
+# This script maps a USB serial device to an LXC container by:
+# 1. Validating and parsing USB bus:device parameters
+# 2. Finding and validating the tty device on the host
+# 3. Updating LXC container configuration with device mapping
+# 4. Creating udev rules for automatic device handling on replug
+# 5. Installing replug handler script for automatic remapping
+# 6. Setting proper permissions and ownership
+#
+# Requires:
+#   - usb_bus_device: USB device in format bus:device (required)
+#   - uid: Container user ID (optional, default: 1000)
+#   - gid: Container group ID (optional, default: 1000)
+#   - container_device_path: Path in container (optional, default: /dev/ttyUSB0)
+#   - vm_id: LXC container ID (from context)
+#
 # Library: usb-device-common.sh (automatically prepended)
+#
+# Output: JSON to stdout (errors to stderr)
 exec >&2
 
 # Store function definition in variable for use in main script and replug script

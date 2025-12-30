@@ -1,8 +1,18 @@
 #!/bin/sh
-# Emit Outputs schema JSON for all LXC containers in the Proxmox cluster.
-# Uses python3 to call pvesh and build a JSON array of objects:
-# [{"hostname":"ct1","pve":"pve1","vm_id":101}, ...]
-# Wrapped as Outputs object with stringified value.
+# List all LXC container IDs in the Proxmox cluster
+#
+# This script lists all LXC containers by:
+# 1. Using pvesh to query Proxmox cluster
+# 2. Building a JSON array of container objects
+# 3. Outputting in Outputs schema format
+#
+# Output format: JSON array of objects with hostname, pve, and vm_id fields
+# Example: [{"hostname":"ct1","pve":"pve1","vm_id":101}, ...]
+#
+# Requires:
+#   - pvesh: Proxmox cluster tools (must be installed)
+#
+# Output: JSON to stdout (errors to stderr)
 
 set -eu
 

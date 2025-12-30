@@ -1,18 +1,27 @@
 #!/bin/sh
+# Mount a block device (by UUID) on the Proxmox host
 #
-# mount-disk.sh: Mounts a block device (by UUID) on the Proxmox host.
+# This script mounts a block device by:
+# 1. Finding the device by UUID
+# 2. Creating the mountpoint directory
+# 3. Mounting the device to the given mountpoint (without fstab, with nofail)
+# 4. Setting permissions and ownership (uid/gid)
 #
-# - Finds the device by UUID
-# - Creates the mountpoint directory
-# - Mounts the device to the given mountpoint on the host (without fstab, with nofail)
-# - Sets permissions (uid/gid)
-# - If storage_selection is a ZFS pool (starts with "zfs:"), exits successfully
-#   (ZFS pools are handled by mount-zfs-pool.sh)
+# Note: If storage_selection is a ZFS pool (starts with "zfs:"), exits successfully
+# (ZFS pools are handled by mount-zfs-pool.sh)
 #
-# This template only mounts the device on the host. To bind mount it into a container,
-# use a separate template (e.g., 130-bind-host.json or similar).
+# This script only mounts the device on the host. To bind mount it into a container,
+# use a separate template (e.g., bind-multiple-volumes-to-lxc.sh).
 #
-# All output is sent to stderr. Script is idempotent and can be run multiple times safely.
+# Requires:
+#   - storage_selection: Device UUID or ZFS pool identifier (required)
+#   - mountpoint: Mount point path (from context)
+#   - uid: User ID for ownership (optional)
+#   - gid: Group ID for ownership (optional)
+#
+# Script is idempotent and can be run multiple times safely.
+#
+# Output: JSON to stdout (errors to stderr)
 
 STORAGE_SELECTION="{{ storage_selection}}"
 UID_VALUE="{{ uid}}"

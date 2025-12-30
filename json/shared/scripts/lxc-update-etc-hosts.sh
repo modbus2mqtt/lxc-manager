@@ -1,13 +1,22 @@
 #!/bin/sh
-
 # Update /etc/hosts entries for a given hostname and optional IPv4/IPv6
-# Parameters (templated):
-#   {{ hostname }} (string)
-#   {{ static_ip }} (string, optional)
-#   {{ static_ip6 }} (string, optional)
+#
+# This script updates /etc/hosts by:
+# 1. Adding or updating hostname entries with IPv4/IPv6 addresses
+# 2. Removing old entries if IPs are not provided
+# 3. Ensuring proper formatting of /etc/hosts file
+#
+# Requires:
+#   - hostname: Container hostname (from context)
+#   - static_ip: IPv4 address (optional)
+#   - static_ip6: IPv6 address (optional)
+#
 # Behavior:
 # - If hostname already appears, lines are updated or removed per rules below
 # - If one of the IPs is present, edit the line
+#
+# Output: JSON to stdout (errors to stderr)
+exec >&2
 # - If only one IP is present, remove the line
 # - If both present and one differs, edit the line to new values
 # - Remove line completely if neither IPv4 nor IPv6 remains

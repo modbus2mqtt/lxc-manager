@@ -1,13 +1,21 @@
 #!/bin/sh
-
 # Edit LXC network settings for a container
-# Parameters:
-#   {{ static_ip }} (string)
-#   {{ static_ip6 }} (string)
-#   {{ static_gw }} (string)
-#   {{ static_gw6 }} (string)
-#   {{ vm_id }} (string)
-#   {{ hostname }} (string)
+#
+# This script configures static IP addresses for an LXC container by:
+# 1. Updating LXC container network configuration
+# 2. Setting IPv4 and/or IPv6 addresses
+# 3. Configuring gateway settings
+#
+# Requires:
+#   - vm_id: LXC container ID (from context)
+#   - hostname: Container hostname (from context)
+#   - static_ip: IPv4 address (optional)
+#   - static_ip6: IPv6 address (optional)
+#   - static_gw: IPv4 gateway (optional)
+#   - static_gw6: IPv6 gateway (optional)
+#
+# Output: JSON to stdout (errors to stderr)
+exec >&2
 #   {{ bridge }} (string)
 ipv4_ok=true
 

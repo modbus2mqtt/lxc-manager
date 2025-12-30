@@ -1,10 +1,19 @@
 #!/bin/sh
 # Prepare /run directory for services (runs inside the container)
-# Ensures /run exists and optionally sets permissions for a specific user/group
-# This is important for unprivileged containers where services need to write PID files
-# Inputs (templated):
-#   {{ username }} - optional username that needs write access
-#   {{ group }}    - optional group name
+#
+# This script prepares the /run directory by:
+# 1. Ensuring /run directory exists
+# 2. Optionally setting permissions for a specific user/group
+# 3. Creating subdirectories if needed
+#
+# This is important for unprivileged containers where services need to write PID files.
+#
+# Requires:
+#   - run_username: Username that needs write access (optional)
+#   - run_group: Group name (optional)
+#
+# Output: JSON to stdout (errors to stderr)
+exec >&2
 
 USERNAME="{{ run_username }}"
 GROUP_NAME="{{ run_group }}"

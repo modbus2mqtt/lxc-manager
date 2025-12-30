@@ -28,6 +28,8 @@ export interface IConfiguredPathes {
 export interface ITemplate {
   execute_on: "ve" | "lxc";
   if?: boolean;
+  skip_if_all_missing?: string[];
+  optional?: boolean;
   name: string;
   description?: string;
   parameters?: IParameter[];

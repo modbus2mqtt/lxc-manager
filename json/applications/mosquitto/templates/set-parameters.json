@@ -111,46 +111,6 @@
           "value": "mosquitto mosquitto-clients"
         },
         {
-          "id": "auth_mode",
-          "value": "{{auth_mode}}"
-        },
-        {
-          "id": "mqtt_port",
-          "value": "{{mqtt_port}}"
-        },
-        {
-          "id": "mqtts_port",
-          "value": "{{mqtts_port}}"
-        },
-        {
-          "id": "mqtt_username",
-          "value": "{{mqtt_username}}"
-        },
-        {
-          "id": "mqtt_password",
-          "value": "{{mqtt_password}}"
-        },
-        {
-          "id": "bind_address",
-          "value": "{{bind_address}}"
-        },
-        {
-          "id": "server_cert",
-          "value": "{{server_cert}}"
-        },
-        {
-          "id": "server_key",
-          "value": "{{server_key}}"
-        },
-        {
-          "id": "ca_cert",
-          "value": "{{ca_cert}}"
-        },
-        {
-          "id": "ca_key",
-          "value": "{{ca_key}}"
-        },
-        {
           "id": "volumes",
           "value": "config=/etc/mosquitto\ndata=/var/lib/mosquitto\nsecret=/etc/mosquitto/certs"
         },
@@ -165,11 +125,7 @@
         {
           "id": "command_args",
           "value": "-c /etc/mosquitto/mosquitto.conf"
-        },
-        {
-          "id": "username",
-          "value": "{{username}}"
-        },
+        },  
         {
           "id": "group",
           "value": "mosquitto"

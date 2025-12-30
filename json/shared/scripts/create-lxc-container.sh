@@ -1,5 +1,19 @@
 #!/bin/sh
-
+# Create LXC container on Proxmox host
+#
+# This script creates an LXC container by:
+# 1. Auto-selecting the best storage (prefers local-zfs, otherwise storage with most free space)
+# 2. Creating the LXC container with specified parameters
+# 3. Configuring container settings (hostname, ostype, etc.)
+#
+# Requires:
+#   - vm_id: LXC container ID (from context)
+#   - hostname: Container hostname (from context)
+#   - ostype: Operating system type (from context)
+#   - storage: Storage name (optional, auto-selected if not provided)
+#
+# Output: JSON to stdout (errors to stderr)
+exec >&2
 
 # Auto-select the best storage for LXC rootfs
 # Prefer local-zfs if available, otherwise use storage with most free space (supports rootdir)

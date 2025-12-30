@@ -1,12 +1,21 @@
 #!/bin/sh
+# Compute static IPs from prefixes and emit parameter overrides
+#
+# This script computes static IP addresses by:
+# 1. Deriving IPv4 address from prefix and VM ID
+# 2. Deriving IPv6 address from prefix and VM ID
+# 3. Emitting parameter overrides as JSON for use in subsequent templates
+#
+# Requires:
+#   - vm_id: LXC container ID (from context)
+#   - ip4_prefix: IPv4 network prefix (optional)
+#   - ip4_cidr: IPv4 CIDR notation (optional)
+#   - ip6_prefix: IPv6 network prefix (optional)
+#   - ip6_cidr: IPv6 CIDR notation (optional)
+#
+# Output: JSON parameter overrides to stdout (errors to stderr)
+exec >&2
 
-# Compute static IPs from prefixes and emit parameter overrides as JSON lines
-# Inputs (templated):
-#   {{ ip4_prefix }} (string)
-#   {{ ip4_cidr }} (string)
-#   {{ ip6_prefix }} (string)
-#   {{ ip6_cidr }} (string)
-#   {{ vm_id }} (string)
 # Output:
 # - If both prefixes set: a single JSON array with all entries
 #   [ {"id":"use_static_ip","value":true}, {"id":"static_ip","value":"<ipv4/cidr>"}, {"id":"static_ip6","value":"<ipv6/cidr>"} ]

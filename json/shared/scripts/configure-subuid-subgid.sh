@@ -1,8 +1,17 @@
 #!/bin/sh
-
 # Configure /etc/subuid and /etc/subgid for unprivileged LXC containers
-# This script ensures that the required UID/GID ranges are available for container creation
-# and for bind mounts with specific UID/GID permissions.
+#
+# This script configures UID/GID mapping by:
+# 1. Ensuring required UID/GID ranges are available for container creation
+# 2. Configuring /etc/subuid and /etc/subgid files
+# 3. Enabling bind mounts with specific UID/GID permissions
+#
+# Requires:
+#   - uid: User ID (optional, defaults to 1000)
+#   - gid: Group ID (optional, defaults to 1000)
+#
+# Output: JSON to stdout (errors to stderr)
+exec >&2
 
 # Parameters: uid and gid (optional, defaults to 1000)
 UID_VAL="${uid:-1000}"

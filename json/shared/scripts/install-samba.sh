@@ -1,9 +1,24 @@
 #!/bin/sh
-# Installs Samba and configures multiple shares.
-# By default, creates shares for all volumes from 'Bind Multiple Volumes to LXC' (160).
-# Optionally, additional shares can be configured.
-# Supports both Alpine Linux (apk) and Debian/Ubuntu (apt-get/apt).
-# All output is sent to stderr. No output on stdout.
+# Install Samba and configure multiple shares
+#
+# This script installs and configures Samba by:
+# 1. Installing Samba packages (supports Alpine Linux apk and Debian/Ubuntu apt)
+# 2. Creating Samba user with specified credentials
+# 3. Creating shares for all volumes from 'Bind Multiple Volumes to LXC' (160)
+# 4. Optionally configuring additional custom shares
+# 5. Enabling and starting Samba service
+#
+# Requires:
+#   - username: Samba username (required)
+#   - password: Samba password (required)
+#   - volumes: Volume mappings from template 160 (optional, auto-detected)
+#   - additional_shares: Additional share configurations (optional)
+#   - uid: User ID (optional)
+#   - gid: Group ID (optional)
+#
+# Supports both Alpine Linux (apk) and Debian/Ubuntu (apt-get/apt)
+#
+# Output: JSON to stdout (errors to stderr)
 
 set -e
 

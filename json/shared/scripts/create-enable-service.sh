@@ -1,14 +1,25 @@
 #!/bin/sh
 # Create and enable service (runs inside the container)
+#
+# This script creates and enables a system service for a command/application by:
+# 1. Creating a system user for the service (if username/uid/gid provided)
+# 2. Creating service directories and setting ownership
+# 3. Creating service configuration file (OpenRC or systemd)
+# 4. Enabling and starting the service
+# 5. Configuring privileged port binding if needed
+#
 # Supports both Alpine Linux (OpenRC) and Debian/Ubuntu (systemd)
-# Inputs (templated):
-#   {{ command }}      - command name (also service name)
-#   {{ command_args }} - command line arguments
-#   {{ username }}     - optional username (if not provided, uses command as username)
-#   {{ uid }}          - optional user id
-#   {{ group }}        - optional group name
-#   {{ owned_paths }}  - space-separated paths to own
-#   {{ bind_privileged_port }} - allow binding to privileged ports (80, 443, etc.)
+#
+# Requires:
+#   - command: Command name (also used as service name) (required)
+#   - command_args: Command line arguments (optional)
+#   - username: Username for service (optional, defaults to command name)
+#   - uid: User ID (optional)
+#   - group: Group name (optional)
+#   - owned_paths: Space-separated paths to own (optional)
+#   - bind_privileged_port: Allow binding to privileged ports (80, 443, etc.) (optional)
+#
+# Output: JSON to stdout (errors to stderr)
 
 COMMAND="{{ command }}"
 USERNAME_PARAM="{{ username }}"

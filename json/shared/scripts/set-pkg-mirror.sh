@@ -1,6 +1,19 @@
 #!/bin/sh
 # Set package manager mirrors for Alpine Linux (apk) or Debian/Ubuntu (apt)
-# All output is sent to stderr. Script is idempotent and can be run multiple times safely.
+#
+# This script configures package manager mirrors by:
+# 1. Detecting OS type (Alpine or Debian/Ubuntu)
+# 2. Configuring appropriate mirror repositories
+# 3. Updating package manager cache
+#
+# Requires:
+#   - ostype: Operating system type (alpine, debian, ubuntu) (optional, defaults to alpine)
+#   - alpine_mirror: Alpine Linux mirror URL (optional)
+#   - debian_mirror: Debian/Ubuntu mirror URL (optional)
+#
+# Script is idempotent and can be run multiple times safely.
+#
+# Output: JSON to stdout (errors to stderr)
 
 OSTYPE="{{ ostype }}"
 ALPINE_MIRROR="{{ alpine_mirror }}"

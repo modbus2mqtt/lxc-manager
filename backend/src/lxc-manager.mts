@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { StorageContext } from "./storagecontext.mjs";
 import { VEWebApp } from "./webapp.mjs";
 import { exec as execCommand } from "./lxc-exec.mjs";
 import { validateAllJson } from "./validateAllJson.mjs";
+import { DocumentationGenerator } from "./documentation-generator.mjs";
 import type { TaskType } from "./types.mjs";
 
 interface ParsedArgs {
@@ -92,6 +94,14 @@ function parseArgs(): ParsedArgs {
       } else {
         i += 1;
       }
+    } else if (args.command === "updatedoc") {
+      // For updatedoc command, optional application name
+      if (!args.application && !arg.startsWith("--")) {
+        args.application = arg;
+        i += 1;
+      } else {
+        i += 1;
+      }
     } else {
       i += 1;
     }
@@ -159,6 +169,29 @@ async function runValidateCommand() {
   await validateAllJson();
 }
 
+async function runUpdatedocCommand(applicationName?: string) {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  // projectRoot should be the workspace root, not backend root
+  // From backend/dist, go up to backend, then up to workspace root
+  const backendRoot = path.resolve(__dirname, "..");
+  const projectRoot = path.resolve(backendRoot, "..");
+  const schemaPath = path.join(projectRoot, "schemas");
+  const jsonPath = path.join(projectRoot, "json");
+  const localPath = path.join(projectRoot, "local", "json");
+
+  // Initialize StorageContext
+  StorageContext.setInstance(
+    localPath,
+    path.join(localPath, "storagecontext.json"),
+    path.join(localPath, "secret.txt"),
+  );
+
+  const generator = new DocumentationGenerator(jsonPath, localPath, schemaPath);
+  await generator.generateDocumentation(applicationName);
+  console.log("\n✓ Documentation generation completed!");
+}
+
 function printHelp() {
   console.log("LXC Manager - Manage LXC containers and applications");
   console.log("");
@@ -173,6 +206,10 @@ function printHelp() {
   console.log("");
   console.log("  validate");
   console.log("    Validate all templates and applications against their schemas");
+  console.log("");
+  console.log("  updatedoc [application]");
+  console.log("    Generate or update documentation for applications and templates");
+  console.log("    If application is specified, only that application is documented");
   console.log("");
   console.log("  (no command)");
   console.log("    Start the web application server");
@@ -260,6 +297,9 @@ async function main() {
     if (args.command === "validate") {
       await runValidateCommand();
       return;
+    } else if (args.command === "updatedoc") {
+      await runUpdatedocCommand(args.application);
+      return;
     } else if (args.command === "exec") {
       if (!args.application || !args.task || !args.parametersFile) {
         console.error(
@@ -340,8 +380,9 @@ async function main() {
       console.error(`Unknown command: ${args.command}`);
       console.error("");
       console.error("Available commands:");
-      console.error("  exec     Execute a task for a specific application");
-      console.error("  validate Validate all templates and applications");
+      console.error("  exec      Execute a task for a specific application");
+      console.error("  validate  Validate all templates and applications");
+      console.error("  updatedoc Generate or update documentation for applications and templates");
       console.error("");
       console.error("Usage (start web app):");
       console.error("  lxc-manager [options]");

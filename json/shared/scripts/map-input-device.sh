@@ -1,7 +1,22 @@
 #!/bin/sh
 # Map input device (keyboard/mouse) to LXC container or VM
-# Requires: usb_bus_device in format bus:device
+#
+# This script maps a USB input device (keyboard/mouse) to an LXC container or VM by:
+# 1. Validating and parsing USB bus:device parameters
+# 2. Finding all associated input event devices (/dev/input/event*)
+# 3. Updating container/VM configuration with device mappings
+# 4. Creating udev rules for automatic device handling on replug
+# 5. Setting proper permissions and ownership
+#
+# Requires:
+#   - usb_bus_device: USB device in format bus:device (required)
+#   - uid: Container user ID (optional, default: 1000)
+#   - gid: Container group ID (optional, default: 1000)
+#   - vm_id: LXC container ID or VM ID (from context)
+#
 # Library: usb-device-common.sh (automatically prepended)
+#
+# Output: JSON to stdout (errors to stderr)
 exec >&2
 
 # VM type detection and management functions are now in usb-device-common.sh library

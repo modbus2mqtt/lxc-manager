@@ -20,6 +20,10 @@
       "minItems": 1,
       "description": "List of parameter IDs. If ALL of these are missing or empty, the template will be skipped. If at least one parameter is present, the template will be executed. If this property is present (and not empty), the template is considered optional."
     },
+    "optional": {
+      "type": "boolean",
+      "description": "If true, this template is optional and will only be executed if the user provides the required parameters. This is useful for templates that require user input (e.g., storage_selection) but don't have skip_if_all_missing defined."
+    },
     "name": {
       "type": "string",
       "maxLength": 30
@@ -92,6 +96,7 @@
           "description": "Optional: Path to library file (relative to scripts directory). Library will be prepended to script content."
         },
         "properties": {
+          "description": "Sets parameter values (outputs). If a template has only one command with properties (and no script, command, or template), it is considered a properties-only template and will be displayed as a properties table in documentation. This is the normal case for parameter-setting templates.",
           "oneOf": [
             {
               "type": "object",

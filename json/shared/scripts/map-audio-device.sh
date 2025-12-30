@@ -1,7 +1,21 @@
 #!/bin/sh
 # Map audio device to LXC container or VM
-# Requires: audio_card in format card0, card1, etc.
+#
+# This script maps an audio device (ALSA sound card) to an LXC container or VM by:
+# 1. Validating and parsing audio card parameter
+# 2. Finding all associated audio devices (control, PCM, timer)
+# 3. Updating container/VM configuration with device mappings
+# 4. Setting proper permissions and ownership
+#
+# Requires:
+#   - audio_card: Audio card identifier in format card0, card1, etc. (required)
+#   - uid: Container user ID (optional, default: 1000)
+#   - gid: Container group ID (optional, default: 1000)
+#   - vm_id: LXC container ID or VM ID (from context)
+#
 # Library: usb-device-common.sh (automatically prepended)
+#
+# Output: JSON to stdout (errors to stderr)
 exec >&2
 
 # VM type detection and management functions are now in usb-device-common.sh library

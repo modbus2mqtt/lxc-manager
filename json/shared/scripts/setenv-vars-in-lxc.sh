@@ -1,11 +1,19 @@
 #!/bin/sh
+# Set environment variables in an LXC container configuration
 #
-# setenv-vars-in-lxc.sh: Sets environment variables in an LXC container configuration.
+# This script sets environment variables by:
+# 1. Parsing environment variables (key=value format, one per line)
+# 2. Adding environment variables to LXC container configuration file
+# 3. Ensuring proper formatting and avoiding duplicates
 #
-# - Parses envs (key=value format, one per line)
-# - Sets environment variables in the container configuration file
+# Requires:
+#   - vm_id: LXC container ID (from context)
+#   - envs: Environment variables in key=value format, one per line (required)
 #
-# All output is sent to stderr. Script is idempotent and can be run multiple times safely.
+# Script is idempotent and can be run multiple times safely.
+#
+# Output: JSON to stdout (errors to stderr)
+exec >&2
 
 VMID="{{ vm_id}}"
 ENVS="{{ envs}}"

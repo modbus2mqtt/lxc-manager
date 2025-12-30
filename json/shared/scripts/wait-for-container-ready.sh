@@ -1,10 +1,16 @@
 #!/bin/sh
 # Wait until an LXC container is ready for package operations
-# Inputs (templated):
-#   {{ vm_id }}
-# Behavior:
-# - Polls lxc-attach for simple commands until success or timeout.
-# - Checks hostname, network, and apk availability.
+#
+# This script waits for a container to be ready by:
+# 1. Polling lxc-attach for simple commands until success or timeout
+# 2. Checking hostname resolution
+# 3. Checking network connectivity
+# 4. Checking package manager availability (apk for Alpine, apt for Debian/Ubuntu)
+#
+# Requires:
+#   - vm_id: LXC container ID (required)
+#
+# Output: JSON to stdout (errors to stderr)
 
 VMID="{{ vm_id }}"
 if [ -z "$VMID" ]; then

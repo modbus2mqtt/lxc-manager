@@ -1,7 +1,14 @@
 #!/bin/sh
 # Start LXC container on Proxmox host
-# Inputs (templated):
-#   {{ vm_id }}
+#
+# This script starts an LXC container by:
+# 1. Checking if container exists
+# 2. Starting the container if it's not already running
+#
+# Requires:
+#   - vm_id: LXC container ID (required)
+#
+# Output: JSON to stdout (errors to stderr)
 
 VMID="{{ vm_id }}"
 if [ -z "$VMID" ]; then

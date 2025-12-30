@@ -1,7 +1,17 @@
 #!/bin/sh
 # List all audio devices (USB and PCI) on the VE host
-# Outputs JSON array: [{"name":"...","value":"card0"}, ...]
+#
+# This script lists all available audio devices by:
+# 1. Scanning /sys/class/sound for audio cards
+# 2. Extracting device information (name, card number)
+# 3. Formatting as JSON array for enumValues
+#
+# Output format: JSON array of objects with name and value fields
+# Example: [{"name":"USB Audio Device","value":"card0"}, ...]
+#
 # Library: usb-device-common.sh (automatically prepended)
+#
+# Output: JSON to stdout (errors to stderr)
 exec >&2
 
 set -e

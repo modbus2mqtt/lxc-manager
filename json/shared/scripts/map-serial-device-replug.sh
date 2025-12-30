@@ -1,7 +1,21 @@
 #!/bin/sh
 # Replug handler for serial device mapping
-# Called by udev when USB serial device is plugged in
-# Updates LXC container mapping and creates symlink in container
+#
+# This script is called by udev when a USB serial device is plugged in. It:
+# 1. Finds the device by vendor/product ID
+# 2. Updates LXC container configuration with device mapping
+# 3. Creates symlink in container to stable device path
+# 4. Sets proper permissions and ownership
+#
+# Parameters (passed from udev rule):
+#   - vm_id: LXC container ID
+#   - vendor_id: USB vendor ID
+#   - product_id: USB product ID
+#   - container_device_path: Device path in container (optional, default: /dev/ttyUSB0)
+#   - container_uid: Container user ID (optional, default: 1000)
+#   - container_gid: Container group ID (optional, default: 1000)
+#
+# Output: Errors to stderr
 exec >&2
 
 # Parameters passed from udev rule

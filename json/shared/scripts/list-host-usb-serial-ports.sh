@@ -1,8 +1,19 @@
 #!/bin/sh
 # List all USB serial ports on the VE host
-# Outputs JSON array of objects with name and value for enumValues
-# Format: [{"name":"descriptive name from lsusb","value":"bus:device"}, ...]
+#
+# This script lists all USB serial devices by:
+# 1. Using lsusb to enumerate USB devices
+# 2. Filtering for devices with serial/tty capabilities
+# 3. Formatting as JSON array for enumValues
+#
+# Output format: JSON array of objects with name and value fields
+# Example: [{"name":"FTDI Serial Converter","value":"1:2"}, ...]
 # Uses bus:device format which is stable and can be used directly for mapping
+#
+# Requires:
+#   - lsusb: USB utilities (must be installed)
+#
+# Output: JSON to stdout (errors to stderr)
 
 set -e
 

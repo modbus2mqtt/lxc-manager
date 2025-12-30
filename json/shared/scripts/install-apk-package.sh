@@ -1,10 +1,18 @@
 #!/bin/sh
 # Install packages inside LXC container (runs inside the container)
+#
+# This script installs packages by:
+# 1. Auto-detecting OS type from /etc/os-release
+# 2. Using appropriate package manager (apk for Alpine, apt for Debian/Ubuntu)
+# 3. Installing specified packages
+#
 # Supports both Alpine Linux (apk) and Debian/Ubuntu (apt)
-# Automatically detects OS type from /etc/os-release
-# Inputs (templated):
-#   {{ packages }}  (space-separated list, e.g. "openssh curl")
-#   {{ ostype }}   (optional fallback - "alpine", "debian", or "ubuntu")
+#
+# Requires:
+#   - packages: Space-separated list of packages (e.g., "openssh curl") (required)
+#   - ostype: OS type fallback if /etc/os-release not available (optional)
+#
+# Output: JSON to stdout (errors to stderr)
 set -eu
 PACKAGES="{{ packages }}"
 

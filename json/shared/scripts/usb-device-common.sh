@@ -1,7 +1,22 @@
 #!/bin/sh
 # USB Device Common Library
-# Provides common functions for mapping USB devices (tty, input, audio) to LXC containers
-# This library contains only function definitions - no direct execution
+#
+# This library provides common functions for mapping USB devices (tty, input, audio) to LXC containers.
+# It contains only function definitions - no direct execution.
+#
+# Main functions:
+#   1. parse_usb_bus_device - Parses bus:device format
+#   2. get_usb_bus_path - Gets USB bus path
+#   3. find_tty_device - Finds tty device for USB bus/device
+#   4. find_usb_sysfs_path - Finds sysfs path for USB device
+#   5. get_vendor_product_id - Gets vendor/product IDs from sysfs
+#   6. check_container_stopped - Checks if container is stopped
+#   7. map_usb_bus_device - Maps USB bus device to container
+#   8. create_udev_rule - Creates udev rule for permissions
+#   9. setup_udev_rule_with_replug - Creates udev rule with replug handler
+#   10. install_replug_handler - Installs replug handler script
+#
+# This library is automatically prepended to scripts that require USB device mapping functionality.
 
 # 1. parse_usb_bus_device(usb_bus_device)
 # Parses bus:device format and sets USB_BUS and USB_DEVICE variables

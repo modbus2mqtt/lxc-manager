@@ -1,7 +1,17 @@
 #!/bin/sh
-# List all USB input devices on the VE host
-# Outputs JSON array: [{"name":"...","value":"bus:device"}, ...]
+# List all USB input devices (keyboard/mouse) on the VE host
+#
+# This script lists all USB input devices by:
+# 1. Scanning /sys/class/input for input devices
+# 2. Matching devices to USB bus:device identifiers
+# 3. Formatting as JSON array for enumValues
+#
+# Output format: JSON array of objects with name and value fields
+# Example: [{"name":"USB Keyboard","value":"1:2"}, ...]
+#
 # Library: usb-device-common.sh (automatically prepended)
+#
+# Output: JSON to stdout (errors to stderr)
 exec >&2
 
 set -e

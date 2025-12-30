@@ -1,14 +1,22 @@
 #!/bin/sh
+# Create a subdirectory under a ZFS pool mountpoint on the Proxmox host
 #
-# mount-zfs-pool.sh: Creates a subdirectory under a ZFS pool mountpoint on the Proxmox host.
+# This script creates a ZFS pool subdirectory by:
+# 1. Verifying that the ZFS pool exists and is mounted
+# 2. Creating a subdirectory under the pool mountpoint
+# 3. Setting proper permissions and ownership (uid/gid)
 #
-# - Verifies that the ZFS pool exists and is mounted
-# - Creates a subdirectory under the pool mountpoint
-# - Sets permissions (uid/gid)
+# Note: The ZFS pool must already be mounted (which is always the case in Proxmox).
 #
-# The ZFS pool must already be mounted (which is always the case in Proxmox).
+# Requires:
+#   - storage_selection: ZFS pool identifier in format "zfs:<pool_name>" (required)
+#   - mountpoint: Mount point path (from context)
+#   - uid: User ID for ownership (optional)
+#   - gid: Group ID for ownership (optional)
 #
-# All output is sent to stderr. Script is idempotent and can be run multiple times safely.
+# Script is idempotent and can be run multiple times safely.
+#
+# Output: JSON to stdout (errors to stderr)
 
 STORAGE_SELECTION="{{ storage_selection}}"
 UID_VALUE="{{ uid}}"

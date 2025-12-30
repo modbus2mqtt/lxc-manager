@@ -1,12 +1,22 @@
 #!/bin/sh
 # Create OpenRC service for an npm package (runs inside the container)
-# Inputs (templated):
-#   {{ command }}      - command name (also service and user name)
-#   {{ command_args }} - command line arguments
-#   {{ uid }}          - optional user id
-#   {{ group }}        - optional group name
-#   {{ owned_paths }}  - space-separated paths to own
-#   {{ bind_privileged_port }} - allow binding to privileged ports (80, 443, etc.)
+#
+# This script creates an OpenRC service for a Node.js/npm application by:
+# 1. Creating a system user for the service
+# 2. Creating service directories and setting ownership
+# 3. Creating OpenRC service configuration file
+# 4. Enabling and starting the service
+# 5. Configuring privileged port binding if needed
+#
+# Requires:
+#   - command: Command name (also used as service and user name) (required)
+#   - command_args: Command line arguments (optional)
+#   - uid: User ID (optional)
+#   - group: Group name (optional)
+#   - owned_paths: Space-separated paths to own (optional)
+#   - bind_privileged_port: Allow binding to privileged ports (80, 443, etc.) (optional)
+#
+# Output: JSON to stdout (errors to stderr)
 
 COMMAND="{{ command }}"
 USER_ID="{{ uid }}"
