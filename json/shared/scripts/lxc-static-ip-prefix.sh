@@ -14,7 +14,7 @@
 #   - ip6_cidr: IPv6 CIDR notation (optional)
 #
 # Output: JSON parameter overrides to stdout (errors to stderr)
-exec >&2
+# Note: Do NOT use exec >&2 here, as it redirects ALL stdout to stderr, including JSON output
 
 # Output:
 # - If both prefixes set: a single JSON array with all entries

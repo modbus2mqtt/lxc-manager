@@ -13,7 +13,7 @@
 #   - storage: Storage name (optional, auto-selected if not provided)
 #
 # Output: JSON to stdout (errors to stderr)
-exec >&2
+# Note: Do NOT use exec >&2 here, as it redirects ALL stdout to stderr, including JSON output
 
 # Auto-select the best storage for LXC rootfs
 # Prefer local-zfs if available, otherwise use storage with most free space (supports rootdir)
@@ -60,10 +60,13 @@ else
 fi
 
 # Check that template_path is set
+# Note: template_path should be set by 010-get-latest-os-template.json
 TEMPLATE_PATH="{{ template_path }}"
-if [ -z "$TEMPLATE_PATH" ] || [ "$TEMPLATE_PATH" = "" ]; then
-  echo "Error: template_path parameter is empty or not set!" >&2
+if [ -z "$TEMPLATE_PATH" ] || [ "$TEMPLATE_PATH" = "" ] || [ "$TEMPLATE_PATH" = "NOT_DEFINED" ]; then
+  echo "Error: template_path parameter is empty, not set, or resolved to NOT_DEFINED!" >&2
+  echo "Current value: '$TEMPLATE_PATH'" >&2
   echo "Please ensure that 010-get-latest-os-template.json template is executed before 100-create-configure-lxc.json" >&2
+  echo "The template should output: [{ \"id\": \"template_path\", \"value\": \"...\" }]" >&2
   exit 1
 fi
 

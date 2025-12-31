@@ -189,21 +189,55 @@ export class VeExecutionCommandProcessor {
 
   /**
    * Parses fallback outputs from echo JSON format.
+   * This is a fallback if parseAndUpdateOutputs didn't produce any outputs.
+   * Note: lastMsg.result contains the stdout from the command execution.
    */
   parseFallbackOutputs(lastMsg: IVeExecuteMessage | undefined): void {
     if (
       this.deps.outputs.size === 0 &&
       lastMsg &&
-      typeof lastMsg.result === "string"
+      typeof lastMsg.result === "string" &&
+      lastMsg.result.trim().length > 0
     ) {
-      const m = String(lastMsg.result)
-        .replace(/^echo\s+/, "")
-        .replace(/^"/, "")
-        .replace(/"$/, "");
+      // Try to parse as JSON array or object
+      let cleaned = lastMsg.result.trim();
+      
+      // Remove unique marker if present (from SSH execution)
+      // The marker is typically at the beginning, followed by the actual JSON output
+      const markerMatch = cleaned.match(/^[A-Z0-9_]+\n(.*)$/s);
+      if (markerMatch && markerMatch[1]) {
+        cleaned = markerMatch[1].trim();
+      }
+      
       try {
-        const obj = JSON.parse(m);
+        const parsed = JSON.parse(cleaned);
+        
+        // Handle array of {id, value} objects (like get-latest-os-template.sh output)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const first = parsed[0];
+          if (first && typeof first === "object" && "id" in first && "value" in first) {
+            // Array of IOutput objects
+            for (const entry of parsed as Array<{ id: string; value: string | number | boolean }>) {
+              if (entry.value !== undefined) {
+                this.deps.outputs.set(entry.id, entry.value);
+              }
+            }
+            return;
+          } else if (first && typeof first === "object" && "name" in first && "value" in first) {
+            // Array of {name, value} objects
+            const raw: { name: string; value: string | number | boolean }[] = [];
+            for (const entry of parsed as Array<{ name: string; value: string | number | boolean }>) {
+              this.deps.outputs.set(entry.name, entry.value);
+              raw.push({ name: entry.name, value: entry.value });
+            }
+            this.deps.setOutputsRaw(raw);
+            return;
+          }
+        }
+        
+        // Handle object format (legacy fallback)
         const raw: { name: string; value: string | number | boolean }[] = [];
-        for (const [name, value] of Object.entries(obj)) {
+        for (const [name, value] of Object.entries(parsed)) {
           const v = value as string | number | boolean;
           this.deps.outputs.set(name, v);
           raw.push({ name, value: v });

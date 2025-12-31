@@ -38,6 +38,24 @@ afterAll(() => {
   }
 });
 
+/**
+ * Helper function to create mock execution functions that should not be called.
+ * These are used in tests that only test properties commands or other non-execution functionality.
+ */
+function createMockExecutionFunctions() {
+  return {
+    runOnLxc: async () => {
+      throw new Error("runOnLxc should not be called");
+    },
+    runOnVeHost: async () => {
+      throw new Error("runOnVeHost should not be called");
+    },
+    executeOnHost: async () => {
+      throw new Error("executeOnHost should not be called");
+    },
+  };
+}
+
 describe("VeExecutionCommandProcessor", () => {
   it("should process properties command with variable replacement in values", () => {
     const outputs = new Map<string, string | number | boolean>();
@@ -55,20 +73,13 @@ describe("VeExecutionCommandProcessor", () => {
     const eventEmitter = new EventEmitter();
     const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+    const mockExec = createMockExecutionFunctions();
     const processor = new VeExecutionCommandProcessor({
       outputs,
       inputs,
       variableResolver,
       messageEmitter,
-      runOnLxc: async () => {
-        throw new Error("runOnLxc should not be called");
-      },
-      runOnVeHost: async () => {
-        throw new Error("runOnVeHost should not be called");
-      },
-      executeOnHost: async () => {
-        throw new Error("executeOnHost should not be called");
-      },
+      ...mockExec,
       outputsRaw: undefined,
       setOutputsRaw: () => {},
     });
@@ -120,20 +131,13 @@ describe("VeExecutionCommandProcessor", () => {
     const eventEmitter = new EventEmitter();
     const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+    const mockExec = createMockExecutionFunctions();
     const processor = new VeExecutionCommandProcessor({
       outputs,
       inputs,
       variableResolver,
       messageEmitter,
-      runOnLxc: async () => {
-        throw new Error("runOnLxc should not be called");
-      },
-      runOnVeHost: async () => {
-        throw new Error("runOnVeHost should not be called");
-      },
-      executeOnHost: async () => {
-        throw new Error("executeOnHost should not be called");
-      },
+      ...mockExec,
       outputsRaw: undefined,
       setOutputsRaw: () => {},
     });
@@ -163,20 +167,13 @@ describe("VeExecutionCommandProcessor", () => {
     const eventEmitter = new EventEmitter();
     const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+    const mockExec = createMockExecutionFunctions();
     const processor = new VeExecutionCommandProcessor({
       outputs,
       inputs,
       variableResolver,
       messageEmitter,
-      runOnLxc: async () => {
-        throw new Error("runOnLxc should not be called");
-      },
-      runOnVeHost: async () => {
-        throw new Error("runOnVeHost should not be called");
-      },
-      executeOnHost: async () => {
-        throw new Error("executeOnHost should not be called");
-      },
+      ...mockExec,
       outputsRaw: undefined,
       setOutputsRaw: () => {},
     });
@@ -208,20 +205,13 @@ describe("VeExecutionCommandProcessor", () => {
     const eventEmitter = new EventEmitter();
     const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+    const mockExec = createMockExecutionFunctions();
     const processor = new VeExecutionCommandProcessor({
       outputs,
       inputs,
       variableResolver,
       messageEmitter,
-      runOnLxc: async () => {
-        throw new Error("runOnLxc should not be called");
-      },
-      runOnVeHost: async () => {
-        throw new Error("runOnVeHost should not be called");
-      },
-      executeOnHost: async () => {
-        throw new Error("executeOnHost should not be called");
-      },
+      ...mockExec,
       outputsRaw: undefined,
       setOutputsRaw: () => {},
     });
@@ -250,20 +240,13 @@ describe("VeExecutionCommandProcessor", () => {
     const eventEmitter = new EventEmitter();
     const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+    const mockExec = createMockExecutionFunctions();
     const processor = new VeExecutionCommandProcessor({
       outputs,
       inputs,
       variableResolver,
       messageEmitter,
-      runOnLxc: async () => {
-        throw new Error("runOnLxc should not be called");
-      },
-      runOnVeHost: async () => {
-        throw new Error("runOnVeHost should not be called");
-      },
-      executeOnHost: async () => {
-        throw new Error("executeOnHost should not be called");
-      },
+      ...mockExec,
       outputsRaw: undefined,
       setOutputsRaw: () => {},
     });
@@ -294,20 +277,13 @@ describe("VeExecutionCommandProcessor", () => {
     const eventEmitter = new EventEmitter();
     const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+    const mockExec = createMockExecutionFunctions();
     const processor = new VeExecutionCommandProcessor({
       outputs,
       inputs,
       variableResolver,
       messageEmitter,
-      runOnLxc: async () => {
-        throw new Error("runOnLxc should not be called");
-      },
-      runOnVeHost: async () => {
-        throw new Error("runOnVeHost should not be called");
-      },
-      executeOnHost: async () => {
-        throw new Error("executeOnHost should not be called");
-      },
+      ...mockExec,
       outputsRaw: undefined,
       setOutputsRaw: () => {},
     });
@@ -334,20 +310,13 @@ describe("VeExecutionCommandProcessor", () => {
     const eventEmitter = new EventEmitter();
     const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+    const mockExec = createMockExecutionFunctions();
     const processor = new VeExecutionCommandProcessor({
       outputs,
       inputs,
       variableResolver,
       messageEmitter,
-      runOnLxc: async () => {
-        throw new Error("runOnLxc should not be called");
-      },
-      runOnVeHost: async () => {
-        throw new Error("runOnVeHost should not be called");
-      },
-      executeOnHost: async () => {
-        throw new Error("executeOnHost should not be called");
-      },
+      ...mockExec,
       outputsRaw: undefined,
       setOutputsRaw: () => {},
     });
@@ -374,20 +343,13 @@ describe("VeExecutionCommandProcessor", () => {
     const eventEmitter = new EventEmitter();
     const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+    const mockExec = createMockExecutionFunctions();
     const processor = new VeExecutionCommandProcessor({
       outputs,
       inputs,
       variableResolver,
       messageEmitter,
-      runOnLxc: async () => {
-        throw new Error("runOnLxc should not be called");
-      },
-      runOnVeHost: async () => {
-        throw new Error("runOnVeHost should not be called");
-      },
-      executeOnHost: async () => {
-        throw new Error("executeOnHost should not be called");
-      },
+      ...mockExec,
       outputsRaw: undefined,
       setOutputsRaw: () => {},
     });
@@ -426,20 +388,13 @@ describe("VeExecutionCommandProcessor", () => {
       const eventEmitter = new EventEmitter();
       const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+      const mockExec = createMockExecutionFunctions();
       const processor = new VeExecutionCommandProcessor({
         outputs,
         inputs,
         variableResolver,
         messageEmitter,
-        runOnLxc: async () => {
-          throw new Error("runOnLxc should not be called");
-        },
-        runOnVeHost: async () => {
-          throw new Error("runOnVeHost should not be called");
-        },
-        executeOnHost: async () => {
-          throw new Error("executeOnHost should not be called");
-        },
+        ...mockExec,
         outputsRaw: undefined,
         setOutputsRaw: () => {},
       });
@@ -476,20 +431,13 @@ describe("VeExecutionCommandProcessor", () => {
       const eventEmitter = new EventEmitter();
       const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+      const mockExec = createMockExecutionFunctions();
       const processor = new VeExecutionCommandProcessor({
         outputs,
         inputs,
         variableResolver,
         messageEmitter,
-        runOnLxc: async () => {
-          throw new Error("runOnLxc should not be called");
-        },
-        runOnVeHost: async () => {
-          throw new Error("runOnVeHost should not be called");
-        },
-        executeOnHost: async () => {
-          throw new Error("executeOnHost should not be called");
-        },
+        ...mockExec,
         outputsRaw: undefined,
         setOutputsRaw: () => {},
       });
@@ -519,20 +467,13 @@ describe("VeExecutionCommandProcessor", () => {
       const eventEmitter = new EventEmitter();
       const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+      const mockExec = createMockExecutionFunctions();
       const processor = new VeExecutionCommandProcessor({
         outputs,
         inputs,
         variableResolver,
         messageEmitter,
-        runOnLxc: async () => {
-          throw new Error("runOnLxc should not be called");
-        },
-        runOnVeHost: async () => {
-          throw new Error("runOnVeHost should not be called");
-        },
-        executeOnHost: async () => {
-          throw new Error("executeOnHost should not be called");
-        },
+        ...mockExec,
         outputsRaw: undefined,
         setOutputsRaw: () => {},
       });
@@ -568,20 +509,13 @@ describe("VeExecutionCommandProcessor", () => {
       const eventEmitter = new EventEmitter();
       const messageEmitter = new VeExecutionMessageEmitter(eventEmitter);
 
+      const mockExec = createMockExecutionFunctions();
       const processor = new VeExecutionCommandProcessor({
         outputs,
         inputs,
         variableResolver,
         messageEmitter,
-        runOnLxc: async () => {
-          throw new Error("runOnLxc should not be called");
-        },
-        runOnVeHost: async () => {
-          throw new Error("runOnVeHost should not be called");
-        },
-        executeOnHost: async () => {
-          throw new Error("executeOnHost should not be called");
-        },
+        ...mockExec,
         outputsRaw: undefined,
         setOutputsRaw: () => {},
       });

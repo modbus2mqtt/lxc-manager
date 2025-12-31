@@ -191,6 +191,56 @@ describe("VeExecution", () => {
     expect(exec.outputs.get("foo")).toBe("baz99");
   });
 
+  it("should process multiple outputs from JSON array correctly", async () => {
+    class TestExec extends VeExecution {
+      protected async runOnVeHost(
+        input: string,
+        tmplCommand: ICommand,
+        timeoutMs = 300000,
+        remoteCommand?: string[],
+      ): Promise<IVeExecuteMessage> {
+        // Use super.runOnVeHost which will execute the command and parse outputs
+        return await super.runOnVeHost(
+          input,
+          tmplCommand,
+          timeoutMs,
+          remoteCommand || ["-c", input],
+        );
+      }
+    }
+    // Simulate get-latest-os-template.sh output: array with template_path and ostype
+    // This matches the exact format from get-latest-os-template.sh
+    const commands: ICommand[] = [
+      {
+        command: 'echo \'[{"id":"template_path","value":"local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz"},{"id":"ostype","value":"alpine"}]\'',
+        name: "get-latest-os-template",
+        execute_on: "ve",
+      },
+    ];
+    const inputs: Array<{ id: string; value: string | number | boolean }> = [];
+    const exec = new TestExec(commands, inputs, dummyVE, new Map(), "sh");
+    await exec.run();
+    
+    // Debug: Show what's actually in outputs
+    const outputKeys = Array.from(exec.outputs.keys());
+    const outputSize = exec.outputs.size;
+    const outputEntries = Array.from(exec.outputs.entries()).map(([k, v]) => `${k}=${v}`).join(", ");
+    
+    // Verify both outputs were added to the map
+    // If this fails, the error message will show what's actually in outputs
+    if (!exec.outputs.has("template_path")) {
+      expect.fail(`template_path not found in outputs. Available keys: ${outputKeys.join(", ")}, size: ${outputSize}, entries: ${outputEntries}`);
+    }
+    if (!exec.outputs.has("ostype")) {
+      expect.fail(`ostype not found in outputs. Available keys: ${outputKeys.join(", ")}, size: ${outputSize}, entries: ${outputEntries}`);
+    }
+    expect(exec.outputs.get("template_path")).toBe("local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz");
+    expect(exec.outputs.get("ostype")).toBe("alpine");
+    
+    // Verify that both outputs are present
+    expect(exec.outputs.size).toBeGreaterThanOrEqual(2);
+  });
+
   // it("should emit message and abort if vm_id missing for LXC", async () => {
   //   class LxcTestExec extends ProxmoxExecution {
   //     protected runOnLxc(
