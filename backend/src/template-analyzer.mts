@@ -22,12 +22,12 @@ export class TemplateAnalyzer {
   }
 
   /**
-   * Checks if template is conditionally executed (has skip_if_all_missing or optional flag).
+   * Checks if template is conditionally executed (has skip_if_all_missing or skip_if_property_set flag).
    */
   isConditionallyExecuted(templateData: ITemplate): boolean {
-    return (
+    return !!(
       (templateData.skip_if_all_missing && templateData.skip_if_all_missing.length > 0) ||
-      templateData.optional === true
+      templateData.skip_if_property_set
     );
   }
 

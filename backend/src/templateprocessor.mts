@@ -233,60 +233,73 @@ export class TemplateProcessor extends EventEmitter {
     };
   }
   /**
-   * Check if a template should be skipped due to missing parameters.
-   * Returns true if skip_if_all_missing is set and ALL specified parameters are missing,
-   * AND there are no other required parameters that are unresolved.
+   * Check if a template should be skipped due to missing parameters or property conditions.
+   * Returns true if:
+   * - skip_if_property_set is set and the specified parameter is set (exists in resolvedParams)
+   * - skip_if_all_missing is set and ALL specified parameters are missing,
+   *   AND there are no other required parameters that are unresolved
    */
   #shouldSkipTemplate(
     tmplData: ITemplate,
     resolvedParams: IResolvedParam[],
   ): boolean {
-    if (!tmplData.skip_if_all_missing || tmplData.skip_if_all_missing.length === 0) {
-      return false;
-    }
-    
-    // Check if ALL parameters in skip_if_all_missing are missing (not resolved yet)
-    // A parameter is considered missing if it's not in resolvedParams
-    // (meaning it hasn't been provided as an output from a previous template)
-    // Skip only if ALL parameters in skip_if_all_missing are missing.
-    let allSkipParamsMissing = true;
-    for (const paramId of tmplData.skip_if_all_missing) {
-      const resolved = resolvedParams.find((p) => p.id === paramId);
-      
-      // If at least one parameter is resolved, don't skip
+    // Check skip_if_property_set logic first (highest priority)
+    if (tmplData.skip_if_property_set) {
+      const resolved = resolvedParams.find((p) => p.id === tmplData.skip_if_property_set);
       if (resolved) {
-        allSkipParamsMissing = false;
-        break;
+        // Parameter is set, skip the template
+        return true;
       }
     }
     
-    // If not all skip parameters are missing, don't skip
-    if (!allSkipParamsMissing) {
-      return false;
-    }
-    
-    // Now check if there are any other required parameters that are unresolved
-    // If there are, we should NOT skip (will cause an error instead)
-    if (tmplData.parameters) {
-      for (const param of tmplData.parameters) {
-        // Skip parameters that are in skip_if_all_missing (we already checked those)
-        if (tmplData.skip_if_all_missing.includes(param.id)) {
-          continue;
-        }
+    // Check skip_if_all_missing logic
+    if (tmplData.skip_if_all_missing && tmplData.skip_if_all_missing.length > 0) {
+      // Check if ALL parameters in skip_if_all_missing are missing (not resolved yet)
+      // A parameter is considered missing if it's not in resolvedParams
+      // (meaning it hasn't been provided as an output from a previous template)
+      // Skip only if ALL parameters in skip_if_all_missing are missing.
+      let allSkipParamsMissing = true;
+      for (const paramId of tmplData.skip_if_all_missing) {
+        const resolved = resolvedParams.find((p) => p.id === paramId);
         
-        // If this is a required parameter and it's not resolved, don't skip
-        if (param.required === true) {
-          const resolved = resolvedParams.find((p) => p.id === param.id);
-          if (!resolved) {
-            // Required parameter is missing, don't skip (will cause error)
-            return false;
+        // If at least one parameter is resolved, don't skip
+        if (resolved) {
+          allSkipParamsMissing = false;
+          break;
+        }
+      }
+      
+      // If not all skip parameters are missing, don't skip
+      if (!allSkipParamsMissing) {
+        return false;
+      }
+      
+      // Now check if there are any other required parameters that are unresolved
+      // If there are, we should NOT skip (will cause an error instead)
+      if (tmplData.parameters) {
+        for (const param of tmplData.parameters) {
+          // Skip parameters that are in skip_if_all_missing (we already checked those)
+          if (tmplData.skip_if_all_missing.includes(param.id)) {
+            continue;
+          }
+          
+          // If this is a required parameter and it's not resolved, don't skip
+          if (param.required === true) {
+            const resolved = resolvedParams.find((p) => p.id === param.id);
+            if (!resolved) {
+              // Required parameter is missing, don't skip (will cause error)
+              return false;
+            }
           }
         }
       }
+      
+      // All skip parameters are missing AND no other required parameters are unresolved
+      return true;
     }
     
-    // All skip parameters are missing AND no other required parameters are unresolved
-    return true;
+    // No skip conditions met
+    return false;
   }
 
   private extractTemplateName(template: ITemplateReference | string): string {
@@ -397,9 +410,9 @@ export class TemplateProcessor extends EventEmitter {
       opts.resolvedParams,
     );
     
-    // Determine if template is conditional (skip_if_all_missing or optional)
-    const isConditional = (tmplData.skip_if_all_missing && tmplData.skip_if_all_missing.length > 0) ||
-                          tmplData.optional === true;
+    // Determine if template is conditional (skip_if_all_missing or skip_if_property_set)
+    const isConditional = !!(tmplData.skip_if_all_missing && tmplData.skip_if_all_missing.length > 0) ||
+                          !!tmplData.skip_if_property_set;
     
     // Determine if template is shared or app-specific
     const sharedTemplatesPath = path.join(this.pathes.jsonPath, "shared", "templates");
