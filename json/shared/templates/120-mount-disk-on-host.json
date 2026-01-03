@@ -17,17 +17,17 @@
       "id": "uid",
       "name": "UID for mount directory",
       "type": "string",
-      "required": false,
+      "default": "0",
       "advanced": true,
-      "description": "Optional: UID to set for the mount directory. If not provided, default permissions will be used."
+      "description": "Optional: UID to set for the mount directory. Default is 0 (root)."
     },
     {
       "id": "gid",
       "name": "GID for mount directory",
       "type": "string",
-      "required": false,
+      "default": "0",
       "advanced": true,
-      "description": "Optional: GID to set for the mount directory. If not provided, default permissions will be used."
+      "description": "Optional: GID to set for the mount directory. Default is 0 (root)."
     }
   ],
   "commands": [

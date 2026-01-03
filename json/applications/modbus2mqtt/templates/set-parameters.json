@@ -11,15 +11,7 @@
       "required": true,
       "description": "Hostname for the Modbus2Mqtt OS"
     },
-    {
-      "id": "username",
-      "name": "OS Username",
-      "type": "string",
-      "default": "modbus2mqtt",
-      "required": true,
-      "advanced": true,
-      "description": "Username for the Modbus2Mqtt OS"
-    }, 
+    
     {
       "id": "packageurl",
       "name": "URL of the APK package",
@@ -34,22 +26,6 @@
       "type": "string",
       "required": true,
       "description": "URL of the public key for verifying the package"
-    },
-    {
-      "id": "uid",
-      "name": "UID",
-      "type": "string",
-      "default": "1000",
-      "description": "UID for the user and mount permissions. Will be used consistently on VE host and LXC container.",
-      "advanced": true
-    },
-    {
-      "id": "gid",
-      "name": "GID",
-      "type": "string",
-      "default": "1000",
-      "description": "GID for the user and mount permissions. Will be used consistently on VE host and LXC container.",
-      "advanced": true
     },
     {
       "id": "usb_bus_device",

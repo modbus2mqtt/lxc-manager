@@ -33,8 +33,8 @@ fi
 
 # Use defaults if not provided
 CONTAINER_DEVICE_PATH="${CONTAINER_DEVICE_PATH:-/dev/ttyUSB0}"
-CONTAINER_UID="${CONTAINER_UID:-1000}"
-CONTAINER_GID="${CONTAINER_GID:-1000}"
+CONTAINER_UID="${CONTAINER_UID:-0}"
+CONTAINER_GID="${CONTAINER_GID:-0}"
 
 # Find the device by vendor/product ID
 # We need to find the current bus:device for this vendor/product

@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs";
 import { StorageContext } from "./storagecontext.mjs";
 import { ITemplateReference } from "./templateprocessor.mjs";
+import { JsonError } from "./jsonvalidator.mjs";
 export interface IReadApplicationOptions {
   applicationHierarchy: string[];
   application?: IApplication;
@@ -158,20 +159,27 @@ export class ApplicationLoader {
   }
 
   /**
-   * Adds a template to the task entry, allowing duplicates.
-   * Duplicates are logged for debugging but not stored as warnings.
+   * Adds a template to the task entry. Duplicates are not allowed and will cause an error.
    * @param templateName Name of the template to add
    * @param taskEntry Task entry to add the template to
    * @param taskName Name of the task (e.g., "installation")
+   * @param opts Options to add errors to
    */
   private addTemplateToTask(
     templateName: string,
     taskEntry: { task: string; templates: (ITemplateReference | string)[] },
     taskName: string,
+    opts: IReadApplicationOptions,
   ): void {
-    // Allow duplicates - log info when duplicate is detected for debugging
-    if (taskEntry.templates.includes(templateName)) {
-      console.log(`[INFO] Template '${templateName}' appears multiple times in ${taskName} task. It will be executed multiple times.`);
+    // Check for duplicates - duplicates are not allowed
+    const templateNameStr = typeof templateName === "string" ? templateName : templateName;
+    const existingTemplates = taskEntry.templates.map(t => typeof t === "string" ? t : t.name);
+    if (existingTemplates.includes(templateNameStr)) {
+      const error = new JsonError(
+        `Template '${templateNameStr}' appears multiple times in ${taskName} task. Each template can only appear once per task.`,
+      );
+      this.addErrorToOptions(opts, error);
+      return; // Don't add duplicate
     }
     taskEntry.templates.push(templateName);
   }
@@ -199,30 +207,32 @@ export class ApplicationLoader {
       if (Array.isArray(list)) {
         for (const entry of list) {
           if (typeof entry === "string") {
-            // Allow duplicates - templates can be executed multiple times with different parameters
-            this.addTemplateToTask(entry, taskEntry, key);
+            this.addTemplateToTask(entry, taskEntry, key, opts);
           } else if (typeof entry === "object" && entry !== null) {
             const name = entry.name;
             if (!name) continue;
-            if (entry.before) {
-              const idx = taskEntry.templates.indexOf(entry.before);
+            if (entry.before && Array.isArray(entry.before) && entry.before.length > 0) {
+              // before is an array, use the first element
+              const beforeName = entry.before[0];
+              const existingTemplates = taskEntry.templates.map(t => typeof t === "string" ? t : t.name);
+              const idx = existingTemplates.indexOf(beforeName);
               if (idx !== -1) {
                 taskEntry.templates.splice(idx, 0, name);
               } else {
-                // Allow duplicates - log info when duplicate is detected
-                this.addTemplateToTask(name, taskEntry, key);
+                this.addTemplateToTask(name, taskEntry, key, opts);
               }
-            } else if (entry.after) {
-              const idx = taskEntry.templates.indexOf(entry.after);
+            } else if (entry.after && Array.isArray(entry.after) && entry.after.length > 0) {
+              // after is an array, use the first element
+              const afterName = entry.after[0];
+              const existingTemplates = taskEntry.templates.map(t => typeof t === "string" ? t : t.name);
+              const idx = existingTemplates.indexOf(afterName);
               if (idx !== -1) {
                 taskEntry.templates.splice(idx + 1, 0, name);
               } else {
-                // Allow duplicates - log info when duplicate is detected
-                this.addTemplateToTask(name, taskEntry, key);
+                this.addTemplateToTask(name, taskEntry, key, opts);
               }
             } else {
-              // Allow duplicates - log info when duplicate is detected
-              this.addTemplateToTask(name, taskEntry, key);
+              this.addTemplateToTask(name, taskEntry, key, opts);
             }
           }
         }

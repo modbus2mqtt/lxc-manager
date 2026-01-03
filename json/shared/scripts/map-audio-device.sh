@@ -67,8 +67,8 @@ fi
 # Get container UID/GID (default 1000) - only used for LXC
 UID_VALUE="{{ uid }}"
 GID_VALUE="{{ gid }}"
-CONTAINER_UID="${UID_VALUE:-1000}"
-CONTAINER_GID="${GID_VALUE:-1000}"
+CONTAINER_UID="${UID_VALUE:-0}"
+CONTAINER_GID="${GID_VALUE:-0}"
 
 # Detect VM type
 VM_ID="{{ vm_id }}"

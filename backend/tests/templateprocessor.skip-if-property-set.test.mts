@@ -71,8 +71,7 @@ describe("TemplateProcessor skip_if_property_set", () => {
               "id": "myvariable",
               "value": "test-value"
             }
-          ],
-          "outputs": ["myvariable"]
+          ]
         }
       ]
     };

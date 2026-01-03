@@ -7,15 +7,15 @@
 # 3. Enabling bind mounts with specific UID/GID permissions
 #
 # Requires:
-#   - uid: User ID (optional, defaults to 1000)
-#   - gid: Group ID (optional, defaults to 1000)
+#   - uid: User ID (optional, defaults to 0 for root)
+#   - gid: Group ID (optional, defaults to 0 for root)
 #
 # Output: JSON to stdout (errors to stderr)
 exec >&2
 
-# Parameters: uid and gid (optional, defaults to 1000)
-UID_VAL="${uid:-1000}"
-GID_VAL="${gid:-1000}"
+# Parameters: uid and gid (optional, defaults to 0 for root)
+UID_VAL="${uid:-0}"
+GID_VAL="${gid:-0}"
 
 # Convert to integer
 UID_VAL=$(echo "$UID_VAL" | awk '{print int($1)}')

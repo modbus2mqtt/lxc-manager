@@ -46,24 +46,24 @@
       "id": "username",
       "name": "Username",
       "type": "string",
-      "default": "",
-      "description": "Optional: Username for setting permissions on volume directories. If provided, will be used for chown instead of numeric UID/GID. Should match the user created on the VE host (300-create-user-on-host.json).",
+      "default": "root",
+      "description": "Optional: Username for setting permissions on volume directories. If provided, will be used for chown instead of numeric UID/GID. Default is root. Should match the user created on the VE host (300-create-user-on-host.json).",
       "advanced": true
     },
     {
       "id": "uid",
       "name": "UID",
       "type": "string",
-      "default": "1000",
-      "description": "UID for setting permissions on volume directories. Will be used consistently on VE host and LXC container.",
+      "default": "0",
+      "description": "UID for setting permissions on volume directories. Will be used consistently on VE host and LXC container. Default is 0 (root).",
       "advanced": true
     },
     {
       "id": "gid",
       "name": "GID",
       "type": "string",
-      "default": "1000",
-      "description": "GID for setting permissions on volume directories. Will be used consistently on VE host and LXC container.",
+      "default": "0",
+      "description": "GID for setting permissions on volume directories. Will be used consistently on VE host and LXC container. Default is 0 (root).",
       "advanced": true
     }
   ],

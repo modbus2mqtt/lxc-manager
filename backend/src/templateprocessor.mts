@@ -94,14 +94,8 @@ export class TemplateProcessor extends EventEmitter {
     };
     const appLoader = new ApplicationLoader(this.pathes);
     let application = appLoader.readApplicationJson(applicationName, readOpts);
-    if (readOpts.error.details && readOpts.error.details.length > 0) {
-      throw new VELoadApplicationError(
-        "Load Application error",
-        applicationName,
-        task,
-        readOpts.error.details,
-      );
-    }
+    // Don't throw immediately - collect all errors first (including template processing errors)
+    // Errors from readApplicationJson will be added to the errors array during template processing
     // 2. Find the application entry for the requested task
     const appEntry = readOpts.taskTemplates.find((t) => t.task === task);
     if (!appEntry) {
@@ -154,7 +148,8 @@ export class TemplateProcessor extends EventEmitter {
       this.pathes,
     );
     // 5. Process each template
-    const errors: IJsonError[] = [];
+    // Start with errors from readApplicationJson (e.g., duplicate templates)
+    const errors: IJsonError[] = readOpts.error.details ? [...readOpts.error.details] : [];
     let outParameters: IParameterWithTemplate[] = [];
     let outCommands: ICommand[] = [];
     let webuiTemplates: string[] = [];
@@ -427,13 +422,20 @@ export class TemplateProcessor extends EventEmitter {
     
     // Collect all outputs from all commands (including properties commands)
     const allOutputIds = new Set<string>();
+    const duplicateIds = new Set<string>();
+    const seenIds = new Set<string>();
     
     // Collect outputs from command.outputs
     for (const cmd of tmplData.commands ?? []) {
       if (cmd.outputs) {
         for (const output of cmd.outputs) {
           const id = typeof output === "string" ? output : output.id;
-          allOutputIds.add(id);
+          if (seenIds.has(id)) {
+            duplicateIds.add(id);
+          } else {
+            seenIds.add(id);
+            allOutputIds.add(id);
+          }
         }
       }
       
@@ -441,12 +443,18 @@ export class TemplateProcessor extends EventEmitter {
       // If a command has properties, all IDs in properties are automatically outputs
       if (cmd.properties !== undefined) {
         const propertyIds: string[] = [];
+        const propertyIdsInCommand = new Set<string>();
         
         if (Array.isArray(cmd.properties)) {
-          // Array of {id, value} objects
+          // Array of {id, value} objects - check for duplicates within the array
           for (const prop of cmd.properties) {
             if (prop && typeof prop === "object" && prop.id) {
-              propertyIds.push(prop.id);
+              if (propertyIdsInCommand.has(prop.id)) {
+                duplicateIds.add(prop.id);
+              } else {
+                propertyIdsInCommand.add(prop.id);
+                propertyIds.push(prop.id);
+              }
             }
           }
         } else if (cmd.properties && typeof cmd.properties === "object" && cmd.properties.id) {
@@ -454,17 +462,34 @@ export class TemplateProcessor extends EventEmitter {
           propertyIds.push(cmd.properties.id);
         }
         
-        // Add property IDs as outputs
+        // Add property IDs as outputs and check for duplicates across commands
         for (const propId of propertyIds) {
-          allOutputIds.add(propId);
+          if (seenIds.has(propId)) {
+            duplicateIds.add(propId);
+          } else {
+            seenIds.add(propId);
+            allOutputIds.add(propId);
+          }
         }
       }
+    }
+    
+    // Check for duplicates and throw error if found
+    if (duplicateIds.size > 0) {
+      const duplicateList = Array.from(duplicateIds).join(", ");
+      opts.errors.push(
+        new JsonError(
+          `Duplicate output/property IDs found in template "${currentTemplateName}": ${duplicateList}. Each ID must be unique within a template.`,
+        ),
+      );
+      return; // Don't process further if duplicates found
     }
     
     // Note: outputs on template level are no longer supported
     // All outputs should be defined on command level
     
     // Add all collected outputs to resolvedParams
+    // Check for conflicts: if another template in the same task already set this output ID, it's an error
     for (const outputId of allOutputIds) {
       const existing = opts.resolvedParams.find((p) => p.id === outputId);
       if (undefined == existing) {
@@ -473,12 +498,16 @@ export class TemplateProcessor extends EventEmitter {
           id: outputId,
           template: currentTemplateName,
         });
-      } else if (hasOnlyProperties) {
-        // Template only has properties commands, allow overwriting (explicit value setting)
-        // This enables templates like create-db-homeassistant.json to overwrite outputs from create-db-dynamic-prices.json
-        existing.template = currentTemplateName;
+      } else {
+        // Output ID already set by another template - this is a conflict
+        // Even if both templates only have properties, setting the same output ID multiple times is an error
+        const conflictingTemplate = existing.template;
+        opts.errors.push(
+          new JsonError(
+            `Output/property ID "${outputId}" is set by multiple templates in the same task: "${conflictingTemplate}" and "${currentTemplateName}". Each output ID can only be set once per task.`,
+          ),
+        );
       }
-      // If parameter is resolved by a different template with scripts/commands, do nothing (prevent conflicts)
     }
 
     // Custom validation: 'if' must refer to another parameter name, not its own
@@ -531,44 +560,51 @@ export class TemplateProcessor extends EventEmitter {
             parentTemplate: this.extractTemplateName(opts.template),
           });
           // Try executing via VeExecution to respect execution semantics; collect errors
-          try {
-            const context = opts.veContext!;
-            const ve = new VeExecution(
-              tmpCommands,
-              [],
-              context ?? null,
-              undefined,
-              opts.sshCommand ?? "ssh",
-            );
-            const rc = await ve.run(null);
-            if (rc && Array.isArray(rc.outputs) && rc.outputs.length > 0) {
-              // If outputs is an array of {name, value}, use it as enum values
-              pparm.enumValues = rc.outputs;
-              // If only one enum value is available and no default is set, use it as default
-              if (rc.outputs.length === 1 && pparm.default === undefined) {
-                const singleValue = rc.outputs[0];
-                // Handle both string values and {name, value} objects
-                if (typeof singleValue === "string") {
-                  pparm.default = singleValue;
-                } else if (typeof singleValue === "object" && singleValue !== null && "value" in singleValue) {
-                  pparm.default = singleValue.value;
+          // Skip execution if this is a validation context (dummy VE context)
+          const isValidationContext = opts.veContext?.host === "validation-dummy";
+          if (!isValidationContext) {
+            try {
+              const context = opts.veContext!;
+              const ve = new VeExecution(
+                tmpCommands,
+                [],
+                context ?? null,
+                undefined,
+                opts.sshCommand ?? "ssh",
+              );
+              const rc = await ve.run(null);
+              if (rc && Array.isArray(rc.outputs) && rc.outputs.length > 0) {
+                // If outputs is an array of {name, value}, use it as enum values
+                pparm.enumValues = rc.outputs;
+                // If only one enum value is available and no default is set, use it as default
+                if (rc.outputs.length === 1 && pparm.default === undefined) {
+                  const singleValue = rc.outputs[0];
+                  // Handle both string values and {name, value} objects
+                  if (typeof singleValue === "string") {
+                    pparm.default = singleValue;
+                  } else if (typeof singleValue === "object" && singleValue !== null && "value" in singleValue) {
+                    pparm.default = singleValue.value;
+                  }
                 }
               }
+            } catch (e: any) {
+              const err =
+                e instanceof JsonError
+                  ? e
+                  : new JsonError(String(e?.message ?? e));
+              opts.errors?.push(err);
+              this.emit("message", {
+                stderr: err.message,
+                result: null,
+                exitCode: -1,
+                command: String(enumTmplName),
+                execute_on: undefined,
+                index: 0,
+              });
             }
-          } catch (e: any) {
-            const err =
-              e instanceof JsonError
-                ? e
-                : new JsonError(String(e?.message ?? e));
-            opts.errors?.push(err);
-            this.emit("message", {
-              stderr: err.message,
-              result: null,
-              exitCode: -1,
-              command: String(enumTmplName),
-              execute_on: undefined,
-              index: 0,
-            });
+          } else {
+            // During validation, we skip enum value execution but still validate that the template exists
+            // The enum template will be validated separately as part of the application validation
           }
         }
 

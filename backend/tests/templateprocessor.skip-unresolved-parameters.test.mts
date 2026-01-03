@@ -71,8 +71,7 @@ describe("TemplateProcessor - Parameters from skipped templates should not appea
               "id": "myvariable",
               "value": "test-value"
             }
-          ],
-          "outputs": ["myvariable"]
+          ]
         }
       ]
     };

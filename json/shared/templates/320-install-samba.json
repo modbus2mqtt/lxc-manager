@@ -13,8 +13,9 @@
       "id": "username",
       "name": "Username",
       "type": "string",
-      "description": "The username for Samba access.",
-      "required": true
+      "default": "root",
+      "description": "The username for Samba access. Default is root.",
+      "advanced": true
     },
     {
       "id": "password",
@@ -43,15 +44,17 @@
       "id": "uid",
       "name": "UID",
       "type": "string",
-      "description": "UID for setting permissions on Samba share directories. Should match the UID from 'Bind Multiple Volumes to LXC' (160) if volumes are used.",
-      "required": true
+      "default": "0",
+      "description": "UID for setting permissions on Samba share directories. Should match the UID from 'Bind Multiple Volumes to LXC' (160) if volumes are used. Default is 0 (root).",
+      "advanced": true
     },
     {
       "id": "gid",
       "name": "GID",
       "type": "string",
-      "description": "GID for setting permissions on Samba share directories. Should match the GID from 'Bind Multiple Volumes to LXC' (160) if volumes are used.",
-      "required": true
+      "default": "0",
+      "description": "GID for setting permissions on Samba share directories. Should match the GID from 'Bind Multiple Volumes to LXC' (160) if volumes are used. Default is 0 (root).",
+      "advanced": true
     },
     {
       "id": "allow-guest",

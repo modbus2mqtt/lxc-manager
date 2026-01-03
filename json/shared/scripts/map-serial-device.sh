@@ -295,8 +295,8 @@ validate_and_parse_parameters() {
   # Get container UID/GID (default 1000)
   UID_VALUE="{{ uid }}"
   GID_VALUE="{{ gid }}"
-  CONTAINER_UID="${UID_VALUE:-1000}"
-  CONTAINER_GID="${GID_VALUE:-1000}"
+  CONTAINER_UID="${UID_VALUE:-0}"
+  CONTAINER_GID="${GID_VALUE:-0}"
 
   # Determine container device path
   CONTAINER_DEVICE_PATH_PARAM="{{ container_device_path }}"

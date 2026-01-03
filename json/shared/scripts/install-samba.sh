@@ -595,9 +595,12 @@ main() {
     exit 1
   fi
   
-  if [ -z "$UID_VALUE" ] || [ -z "$GID_VALUE" ] || [ "$UID_VALUE" = "" ] || [ "$GID_VALUE" = "" ]; then
-    echo "Error: Required parameters (uid, gid) must be set and not empty!" >&2
-    exit 1
+  # uid and gid are optional, default to 0 (root) if not provided
+  if [ -z "$UID_VALUE" ] || [ "$UID_VALUE" = "" ]; then
+    UID_VALUE="0"
+  fi
+  if [ -z "$GID_VALUE" ] || [ "$GID_VALUE" = "" ]; then
+    GID_VALUE="0"
   fi
 
   detect_service_manager

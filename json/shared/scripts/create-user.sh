@@ -123,7 +123,12 @@ fi
 
 # 2. Create user if not exists
 USER_CREATED=0
-if ! id -u "$USERNAME" >/dev/null 2>&1; then
+# Special case: if username is "root" and uid is 0, root already exists, skip creation
+if [ "$USERNAME" = "root" ] && [ -n "$UID_VALUE" ] && [ "$UID_VALUE" = "0" ]; then
+  echo "User 'root' already exists, skipping creation" >&2
+  ACTUAL_UID="0"
+  ACTUAL_GID="0"
+elif ! id -u "$USERNAME" >/dev/null 2>&1; then
   if [ -n "$UID_VALUE" ] && [ "$UID_VALUE" != "" ]; then
     # UID specified, use it
     if [ "$SYSTEM_TYPE" = "alpine" ]; then

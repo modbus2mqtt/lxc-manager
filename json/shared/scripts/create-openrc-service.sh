@@ -59,7 +59,10 @@ else
 fi
 
 # Create user if doesn't exist
-if ! id -u "$USERNAME" >/dev/null 2>&1; then
+# Special case: if username is "root", root already exists, skip creation
+if [ "$USERNAME" = "root" ]; then
+  echo "User 'root' already exists, skipping creation" >&2
+elif ! id -u "$USERNAME" >/dev/null 2>&1; then
   if [ -n "$USER_ID" ]; then
     adduser -D -h "$HOME_DIR" -s /sbin/nologin -G "$USER_GROUP" -u "$USER_ID" "$USERNAME"
   else

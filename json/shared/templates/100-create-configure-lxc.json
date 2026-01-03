@@ -53,23 +53,24 @@
       "id": "uid",
       "name": "UID",
       "type": "string",
-      "default": "1000",
-      "description": "UID for UID/GID mapping and permissions. If provided, will be mapped directly between host and container (1:1 mapping).",
+      "default": "0",
+      "description": "UID for UID/GID mapping and permissions. If provided, will be mapped directly between host and container (1:1 mapping). Default is 0 (root).",
       "advanced": true
     },
     {
       "id": "gid",
       "name": "GID",
       "type": "string",
-      "default": "1000",
-      "description": "GID for UID/GID mapping and permissions. If provided, will be mapped directly between host and container (1:1 mapping).",
+      "default": "0",
+      "description": "GID for UID/GID mapping and permissions. If provided, will be mapped directly between host and container (1:1 mapping). Default is 0 (root).",
       "advanced": true
     },
     {
       "id": "username",
       "name": "Username",
       "type": "string",
-      "description": "Optional: Username to create on the VE host before container creation. This ensures consistent UID/GID mapping between host and container. If not provided, no user will be created on the host.",
+      "default": "root",
+      "description": "Optional: Username to create on the VE host before container creation. This ensures consistent UID/GID mapping between host and container. Default is root. If not provided, root will be used.",
       "advanced": true
     }
   ],

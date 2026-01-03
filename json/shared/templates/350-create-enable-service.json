@@ -14,8 +14,9 @@
       "id": "username",
       "name": "Username",
       "type": "string",
-      "required": false,
-      "description": "Optional username for the service. If not provided, the command name will be used as username."
+      "default": "root",
+      "description": "Optional username for the service. Default is root. If not provided, the command name will be used as username.",
+      "advanced": true
     },
     {
       "id": "command_args",
@@ -29,9 +30,9 @@
       "id": "uid",
       "name": "User ID",
       "type": "string",
-      "required": false,
-      "default": "",
-      "description": "Optional user ID (defaults to auto-assigned)"
+      "default": "0",
+      "description": "Optional user ID. Default is 0 (root). If not provided, the system will assign one automatically.",
+      "advanced": true
     },
     {
       "id": "group",

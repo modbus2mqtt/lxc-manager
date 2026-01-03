@@ -165,11 +165,11 @@ async function runExecCommand(
   );
 }
 
-async function runValidateCommand() {
-  await validateAllJson();
+async function runValidateCommand(localPath?: string) {
+  await validateAllJson(localPath);
 }
 
-async function runUpdatedocCommand(applicationName?: string) {
+async function runUpdatedocCommand(applicationName?: string, localPathArg?: string) {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   // projectRoot should be the workspace root, not backend root
@@ -178,12 +178,12 @@ async function runUpdatedocCommand(applicationName?: string) {
   const projectRoot = path.resolve(backendRoot, "..");
   const schemaPath = path.join(projectRoot, "schemas");
   const jsonPath = path.join(projectRoot, "json");
-  const localPath = path.join(projectRoot, "local", "json");
+  const localPath = localPathArg || path.join(projectRoot, "local", "json");
 
   // Validate all JSON files before generating documentation
   // If validation fails, process.exit(1) will be called and documentation won't be generated
   console.log("Validating all JSON files before generating documentation...\n");
-  await validateAllJson();
+  await validateAllJson(localPathArg);
   console.log("\n✓ Validation successful. Proceeding with documentation generation...\n");
 
   // Initialize StorageContext
@@ -301,10 +301,12 @@ async function main() {
 
     // Handle commands
     if (args.command === "validate") {
-      await runValidateCommand();
+      const localPath = args.localPath || path.join(process.cwd(), "examples");
+      await runValidateCommand(localPath);
       return;
     } else if (args.command === "updatedoc") {
-      await runUpdatedocCommand(args.application);
+      const localPath = args.localPath || path.join(process.cwd(), "examples");
+      await runUpdatedocCommand(args.application, localPath);
       return;
     } else if (args.command === "exec") {
       if (!args.application || !args.task || !args.parametersFile) {

@@ -8,6 +8,7 @@ import { IReadApplicationOptions } from "./apploader.mjs";
 import { TaskType } from "./types.mjs";
 import { VEConfigurationError, VELoadApplicationError, IVEContext } from "./backend-types.mjs";
 import { TemplatePathResolver } from "./template-path-resolver.mjs";
+import { TemplateProcessor } from "./templateprocessor.mjs";
 
 function findTemplateDirs(dir: string): string[] {
   let results: string[] = [];
@@ -61,7 +62,7 @@ function findApplicationFiles(dir: string): string[] {
   return results;
 }
 
-export async function validateAllJson(): Promise<void> {
+export async function validateAllJson(localPathArg?: string): Promise<void> {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   const projectRoot = path.resolve(__dirname, "..");
@@ -69,10 +70,16 @@ export async function validateAllJson(): Promise<void> {
   const schemasDir = path.join(rootDir, "schemas");
   
   // Use the same paths as webapp.mts: localPath and jsonPath
-  // Default localPath is "local" in current working directory, or "examples" for webapp
-  // For validation, we'll use "local" as default
-  const defaultLocalPath = path.join(process.cwd(), "local");
-  const localPath = process.env.LXC_MANAGER_LOCAL_PATH || defaultLocalPath;
+  // Default localPath is "examples" in root directory (same as webapp.mts)
+  // Priority: 1. localPathArg (from --local option), 2. LXC_MANAGER_LOCAL_PATH env var, 3. default "examples"
+  const defaultLocalPath = path.join(rootDir, "examples");
+  let localPath: string;
+  if (localPathArg) {
+    // If localPathArg is relative, make it relative to process.cwd(), otherwise use as-is
+    localPath = path.isAbsolute(localPathArg) ? localPathArg : path.join(process.cwd(), localPathArg);
+  } else {
+    localPath = process.env.LXC_MANAGER_LOCAL_PATH || defaultLocalPath;
+  }
   const jsonPath = path.join(rootDir, "json");
 
   let hasError = false;
@@ -93,11 +100,11 @@ export async function validateAllJson(): Promise<void> {
     process.exit(2);
   }
 
-  // Validate templates - only search in localPath and jsonPath (like webapp.mts)
+  // Validate templates - search in localPath (default: examples) and jsonPath
   console.log("Validating templates...");
   const templateDirs: string[] = [];
   
-  // Search in localPath
+  // Search in localPath (default: examples)
   if (fs.existsSync(localPath)) {
     const localTemplateDirs = findTemplateDirs(localPath);
     templateDirs.push(...localTemplateDirs);
@@ -153,11 +160,11 @@ export async function validateAllJson(): Promise<void> {
     }
   }
 
-  // Validate applications - only search in localPath and jsonPath (like webapp.mts)
+  // Validate applications - search in localPath (default: examples) and jsonPath
   console.log("\nValidating applications...");
   const applicationFiles: string[] = [];
   
-  // Search in localPath
+  // Search in localPath (default: examples)
   if (fs.existsSync(localPath)) {
     const localApps = findApplicationFiles(
       path.join(localPath, "applications")
@@ -294,54 +301,27 @@ export async function validateAllJson(): Promise<void> {
         }
         
         try {
-          // Create a minimal VE context for validation if none exists
-          // We need at least one VE context to use loadApplication
-          let veContext = storageContext.getCurrentVEContext();
+          // Create a dummy VE context for validation
+          // loadApplication requires a VE context, but we don't need a real SSH connection
+          // The VE context is only used for path resolution, not for SSH operations
+          const dummyVeContext: IVEContext = {
+            host: "validation-dummy",
+            current: false,
+            getStorageContext: () => storageContext,
+            getKey: () => "ve_validation-dummy",
+          };
           
-          // If no current VE context, try to find any VE context
-          if (!veContext) {
-            const veKeys = storageContext.keys().filter((k) => k.startsWith("ve_"));
-            if (veKeys.length > 0 && veKeys[0]) {
-              veContext = storageContext.getVEContextByKey(veKeys[0]);
-            }
-          }
+          // Use loadApplication to validate the application
+          // This will perform full template processing including:
+          // - Schema validation
+          // - Template existence checks
+          // - Script existence checks
+          // - Duplicate output/property ID checks
+          // - Skip logic validation
+          const templateProcessor = new TemplateProcessor(configuredPathes, storageContext);
+          await templateProcessor.loadApplication(appName, task, dummyVeContext);
           
-          // If no VE context exists, create a minimal one for validation
-          if (!veContext) {
-            const dummyVeContext = {
-              host: "dummy-host-for-validation",
-              port: 22,
-              current: true,
-              getStorageContext: () => storageContext,
-              getKey: () => "dummy-validation-key",
-            } as IVEContext;
-            storageContext.setVEContext(dummyVeContext);
-            veContext = storageContext.getVEContextByKey("ve_dummy-host-for-validation");
-          }
-          
-          // Use the normal loadApplication which validates everything (templates, scripts, etc.)
-          if (veContext) {
-            await templateProcessor.loadApplication(appName, task, veContext);
-            console.log(`✔ Validated application: ${relPath} (task: ${task})`);
-          } else {
-            // Fallback: manually check templates if VE context creation failed
-            // Build template and script paths
-            const templatePathes = TemplatePathResolver.buildTemplatePathes(
-              readOpts.applicationHierarchy,
-              { jsonPath, localPath, schemaPath: schemasDir },
-            );
-            
-            // Check each template exists
-            for (const tmpl of taskEntry.templates) {
-              const tmplName = typeof tmpl === "string" ? tmpl : tmpl.name;
-              const tmplFound = TemplatePathResolver.findInPathes(templatePathes, tmplName) !== undefined;
-              if (!tmplFound) {
-                hasError = true;
-                console.error(`✖ Template not found: ${tmplName} (in application ${appName}, task ${task})`);
-                console.error(`  Searched in: ${templatePathes.join(", ")}`);
-              }
-            }
-          }
+          console.log(`✔ Validated application: ${relPath} (task: ${task})`);
         } catch (err: any) {
           hasError = true;
           console.error(`✖ Error validating application: ${relPath} (task: ${task})`);
@@ -377,6 +357,7 @@ export async function validateAllJson(): Promise<void> {
     process.exit(1);
   } else {
     console.log("\nAll templates, applications, scripts, and referenced templates are valid.");
+    process.exit(0);
   }
 }
 

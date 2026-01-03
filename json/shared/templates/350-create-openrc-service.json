@@ -22,9 +22,9 @@
       "id": "uid",
       "name": "User ID",
       "type": "string",
-      "required": false,
-      "default": "",
-      "description": "Optional user ID (defaults to auto-assigned)"
+      "default": "0",
+      "description": "Optional user ID. Default is 0 (root). If not provided, the system will assign one automatically.",
+      "advanced": true
     },
     {
       "id": "group",
