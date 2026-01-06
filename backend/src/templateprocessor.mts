@@ -431,10 +431,6 @@ export class TemplateProcessor extends EventEmitter {
     // Allow overwriting outputs if template only has properties commands (explicit value setting)
     // Prevent overwriting outputs from different templates with scripts/commands (prevents conflicts)
     const currentTemplateName = this.extractTemplateName(opts.template);
-    // Check if template only has properties commands (no scripts or command strings)
-    const hasOnlyProperties = tmplData.commands?.every(
-      (cmd) => cmd.properties !== undefined && cmd.script === undefined && cmd.command === undefined && cmd.template === undefined
-    ) ?? false;
     
     // Collect all outputs from all commands (including properties commands)
     const allOutputIds = new Set<string>();
@@ -567,7 +563,7 @@ export class TemplateProcessor extends EventEmitter {
                 }
                 if (conflictingTemplateSetsOutput) break;
               }
-            } catch (e) {
+            } catch {
               // If we can't load the template, assume it sets output (conservative approach)
               conflictingTemplateSetsOutput = true;
             }

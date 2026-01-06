@@ -3,6 +3,7 @@ import { RouterOutlet, RouterLink, Router } from '@angular/router';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { VeConfigurationService } from './ve-configuration.service';
@@ -10,7 +11,7 @@ import { ISsh } from '../shared/types';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, MatTooltipModule, MatSelectModule, MatFormFieldModule, FormsModule, CommonModule],
+  imports: [RouterOutlet, RouterLink, MatTooltipModule, MatSelectModule, MatFormFieldModule, MatIconModule, FormsModule, CommonModule],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

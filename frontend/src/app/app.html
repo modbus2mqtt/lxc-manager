@@ -3,8 +3,8 @@
   <span class="app-title">Proxmox WebApp</span>
   <span class="header-actions">
     @if (sshConfigs.length > 0) {
-      <label class="host-label">Host:</label>
       <mat-form-field appearance="outline" class="host-selector">
+        <mat-label>Host</mat-label>
         <mat-select [(ngModel)]="currentHost" (selectionChange)="onHostChange($event.value)" [value]="currentHost">
           @for (ssh of sshConfigs; track ssh.host) {
             <mat-option [value]="ssh.host">{{ getHostDisplay(ssh) }}</mat-option>
@@ -12,6 +12,9 @@
         </mat-select>
       </mat-form-field>
     }
+    <button class="create-app-btn header-btn" type="button" aria-label="Create Application" routerLink="/create-application" matTooltip="Create Application">
+      <mat-icon aria-hidden="true">add_circle</mat-icon>
+    </button>
     <button class="apps-btn header-btn" type="button" aria-label="Applications" routerLink="/applications" matTooltip="Applications">
       <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <rect x="3" y="3" width="8" height="8" rx="2" fill="#3949AB"/>

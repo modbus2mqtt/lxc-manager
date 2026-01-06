@@ -323,7 +323,6 @@ export async function validateAllJson(localPathArg?: string): Promise<void> {
   
   StorageContext.setInstance(localPath, storageContextPath, secretFilePath);
   const storageContext = StorageContext.getInstance();
-  const templateProcessor = storageContext.getTemplateProcessor();
   
   // Get pathes from storageContext (similar to how it's done in lxc-exec.mts)
   // Use the same paths as webapp.mts

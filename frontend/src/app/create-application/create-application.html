@@ -1,0 +1,176 @@
+<div class="create-application-container">
+  <h1>Create Application from Framework</h1>
+
+  <mat-stepper #stepper linear>
+    <!-- Step 1: Select Framework -->
+    <mat-step [stepControl]="appPropertiesForm" [editable]="true">
+      <ng-template matStepLabel>Select Framework</ng-template>
+      <div class="step-content">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Framework</mat-label>
+          <mat-select (selectionChange)="onFrameworkSelected($event.value)" [value]="selectedFramework?.id">
+            <mat-option [value]="null">-- Select Framework --</mat-option>
+            @for (framework of frameworks; track framework.id) {
+              <mat-option [value]="framework.id">{{ framework.name }} ({{ framework.id }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        @if (loadingFrameworks()) {
+          <p>Loading frameworks...</p>
+        }
+
+        @if (selectedFramework) {
+          <mat-card class="selected-framework-card">
+            <mat-card-content>
+              <h3>Selected Framework</h3>
+              <p><strong>Name:</strong> {{ selectedFramework.name }}</p>
+              <p><strong>ID:</strong> {{ selectedFramework.id }}</p>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+      <div class="step-actions">
+        <button mat-button (click)="cancel()">Cancel</button>
+        <button mat-raised-button color="primary" matStepperNext [disabled]="!canProceedToStep2()">Next</button>
+      </div>
+    </mat-step>
+
+    <!-- Step 2: Application Properties -->
+    <mat-step [stepControl]="appPropertiesForm" [editable]="true">
+      <ng-template matStepLabel>Application Properties</ng-template>
+      <div class="step-content">
+        <form [formGroup]="appPropertiesForm">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Application Name</mat-label>
+            <input matInput formControlName="name" required />
+            @if (appPropertiesForm.get('name')?.hasError('required') && appPropertiesForm.get('name')?.touched) {
+              <mat-error>Application name is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Application ID</mat-label>
+            <input matInput formControlName="applicationId" required />
+            <mat-hint>Lowercase letters, numbers, and hyphens only (e.g., my-app)</mat-hint>
+            @if (appPropertiesForm.get('applicationId')?.hasError('required') && appPropertiesForm.get('applicationId')?.touched) {
+              <mat-error>Application ID is required</mat-error>
+            }
+            @if (appPropertiesForm.get('applicationId')?.hasError('pattern') && appPropertiesForm.get('applicationId')?.touched) {
+              <mat-error>Only lowercase letters, numbers, and hyphens are allowed</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" required rows="3"></textarea>
+            @if (appPropertiesForm.get('description')?.hasError('required') && appPropertiesForm.get('description')?.touched) {
+              <mat-error>Description is required</mat-error>
+            }
+          </mat-form-field>
+        </form>
+      </div>
+      <div class="step-actions">
+        <button mat-button matStepperPrevious>Back</button>
+        <button mat-button (click)="cancel()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="canProceedToStep3() && stepper.next()">Next</button>
+      </div>
+    </mat-step>
+
+    <!-- Step 3: Parameters -->
+    <mat-step [stepControl]="parameterForm" [editable]="true">
+      <ng-template matStepLabel>Configure Parameters</ng-template>
+      <div class="step-content">
+        @if (loadingParameters()) {
+          <p>Loading parameters...</p>
+        } @else {
+          @if (hasAdvancedParams()) {
+            <div class="advanced-toggle">
+              <button mat-button (click)="toggleAdvanced()">
+                {{ showAdvanced() ? 'Hide' : 'Show' }} Advanced Parameters
+              </button>
+            </div>
+          }
+
+          @for (groupName of groupNames; track groupName) {
+            <app-parameter-group
+              [groupName]="groupName"
+              [groupedParameters]="groupedParameters"
+              [form]="parameterForm"
+              [showAdvanced]="showAdvanced()"
+            ></app-parameter-group>
+          }
+
+          @if (parameters.length === 0) {
+            <p>No parameters to configure for this framework.</p>
+          }
+        }
+      </div>
+      <div class="step-actions">
+        <button mat-button matStepperPrevious>Back</button>
+        <button mat-button (click)="cancel()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="canProceedToStep4() && stepper.next()">Next</button>
+      </div>
+    </mat-step>
+
+    <!-- Step 4: Summary and Create -->
+    <mat-step [editable]="false">
+      <ng-template matStepLabel>Summary</ng-template>
+      <div class="step-content">
+        <mat-card class="summary-card">
+          <mat-card-header>
+            <mat-card-title>Application Summary</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="summary-section">
+              <h3>Framework</h3>
+              <p><strong>Name:</strong> {{ selectedFramework?.name }}</p>
+              <p><strong>ID:</strong> {{ selectedFramework?.id }}</p>
+            </div>
+
+            <div class="summary-section">
+              <h3>Application Properties</h3>
+              <p><strong>Name:</strong> {{ appPropertiesForm.get('name')?.value }}</p>
+              <p><strong>ID:</strong> {{ appPropertiesForm.get('applicationId')?.value }}</p>
+              <p><strong>Description:</strong> {{ appPropertiesForm.get('description')?.value }}</p>
+            </div>
+
+            <div class="summary-section">
+              <h3>Parameters</h3>
+              @if (parameters.length === 0) {
+                <p>No parameters configured</p>
+              } @else {
+                <ul>
+                  @for (param of parameters; track param.id) {
+                    @if (parameterForm.get(param.id)?.value !== null && parameterForm.get(param.id)?.value !== undefined && parameterForm.get(param.id)?.value !== '') {
+                      <li>
+                        <strong>{{ param.name }}:</strong>
+                        @if (param.secure) {
+                          <span>***</span>
+                        } @else {
+                          <span>{{ parameterForm.get(param.id)?.value }}</span>
+                        }
+                      </li>
+                    }
+                  }
+                </ul>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+      <div class="step-actions">
+        <button mat-button matStepperPrevious>Back</button>
+        <button mat-button (click)="cancel()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="createApplication()" [disabled]="creating()">
+          @if (creating()) {
+            Creating...
+          } @else {
+            Create Application
+          }
+        </button>
+      </div>
+    </mat-step>
+  </mat-stepper>
+</div>
+

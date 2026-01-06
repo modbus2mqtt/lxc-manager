@@ -1,6 +1,6 @@
 //
 
-import { ApiUri, ISsh, IApplicationsResponse, ISshConfigsResponse, ISshConfigKeyResponse, ISshCheckResponse, IUnresolvedParametersResponse, IDeleteSshConfigResponse, IPostVeConfigurationResponse, IPostVeConfigurationBody, IPostSshConfigResponse, IVeExecuteMessagesResponse, ISingleExecuteMessagesResponse } from '../shared/types';
+import { ApiUri, ISsh, IApplicationsResponse, ISshConfigsResponse, ISshConfigKeyResponse, ISshCheckResponse, IUnresolvedParametersResponse, IDeleteSshConfigResponse, IPostVeConfigurationResponse, IPostVeConfigurationBody, IPostSshConfigResponse, IVeExecuteMessagesResponse, IFrameworkNamesResponse, IFrameworkParametersResponse, IPostFrameworkCreateApplicationBody, IPostFrameworkCreateApplicationResponse } from '../shared/types';
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -162,5 +162,18 @@ export class VeConfigurationService {
     return this.post<IPostVeConfigurationResponse, object>(url, {}).pipe(
       tap((res) => this.setVeContextKeyFrom(res))
     );
+  }
+
+  getFrameworkNames(): Observable<IFrameworkNamesResponse> {
+    return this.get<IFrameworkNamesResponse>(ApiUri.FrameworkNames);
+  }
+
+  getFrameworkParameters(frameworkId: string): Observable<IFrameworkParametersResponse> {
+    const url = ApiUri.FrameworkParameters.replace(':frameworkId', encodeURIComponent(frameworkId));
+    return this.get<IFrameworkParametersResponse>(url);
+  }
+
+  createApplicationFromFramework(body: IPostFrameworkCreateApplicationBody): Observable<IPostFrameworkCreateApplicationResponse> {
+    return this.post<IPostFrameworkCreateApplicationResponse, IPostFrameworkCreateApplicationBody>(ApiUri.FrameworkCreateApplication, body);
   }
 }
