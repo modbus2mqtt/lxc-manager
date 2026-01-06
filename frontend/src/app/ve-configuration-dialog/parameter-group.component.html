@@ -1,0 +1,73 @@
+@if (isGroupVisible()) {
+	<div class="param-group" [formGroup]="form">
+		<div class="group-title">{{ groupName }}</div>
+		<div class="group-fields">
+			@for (param of params; track param) {
+				@if (isVisible(param)) {
+					@switch (param.type) {
+						@case ('boolean') {
+						<div class="param-field param-toggle">
+						<mat-slide-toggle [formControlName]="param.id" [matTooltip]="getTooltip(param)" matTooltipPosition="above">
+						{{ param.description || param.name }}
+						</mat-slide-toggle>
+						</div>
+						}
+						@case ('enum') {
+						<mat-form-field appearance="outline" class="param-field">
+						<mat-label>{{ param.name }}</mat-label>
+						<mat-select [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above">
+						@for (option of param.enumValues; track option) {
+						<mat-option [value]="getEnumOptionValue(option)">{{ getEnumOptionLabel(option) }}</mat-option>
+						}
+						</mat-select>
+						@if (param.default !== undefined) {
+						<mat-hint>Default: {{ param.default }}</mat-hint>
+						}
+						</mat-form-field>
+						}
+						@case ('string') {
+						@if (param.upload) {
+						<div class="param-field">
+						<mat-form-field appearance="outline">
+						<mat-label>{{ param.name }}</mat-label>
+						<input type="file" #fileInput [id]="'file-' + param.id" (change)="onFileSelected($event, param.id)" style="display: none;" />
+						<input matInput [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above" readonly />
+						<button mat-icon-button matSuffix type="button" (click)="fileInput.click()" [matTooltip]="'Select file'" matTooltipPosition="above">
+						<mat-icon>attach_file</mat-icon>
+						</button>
+						@if (param.default !== undefined) {
+						<mat-hint>Default: {{ param.default }}</mat-hint>
+						}
+						</mat-form-field>
+						</div>
+						} @else {
+						<mat-form-field appearance="outline" class="param-field">
+						<mat-label>{{ param.name }}</mat-label>
+						<input matInput [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above" />
+						@if (param.default !== undefined) {
+						<mat-hint>Default: {{ param.default }}</mat-hint>
+						}
+						</mat-form-field>
+						}
+						}
+						@case ('number') {
+						<mat-form-field appearance="outline" class="param-field">
+						<mat-label>{{ param.name }}</mat-label>
+						<input matInput type="number" [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above" />
+						@if (param.default !== undefined) {
+						<mat-hint>Default: {{ param.default }}</mat-hint>
+						}
+						</mat-form-field>
+						}
+						@default {
+							<div class="param-field unsupported-param">
+							Unsupported parameter type: {{ param.type }}
+							</div>
+						}
+					}
+				}
+			}
+		</div>
+	</div>
+}
+

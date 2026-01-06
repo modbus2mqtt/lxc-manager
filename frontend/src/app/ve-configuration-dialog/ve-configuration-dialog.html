@@ -12,96 +12,33 @@
 <form [formGroup]="form" (ngSubmit)="save()">
 	@if (!loading()) {
 		<div class="group-container">
-				@for (groupName of groupNames; track groupName) {
-					@if (isGroupVisible(groupName)) {
-					<div class="param-group">
-						<div class="group-title">{{ groupName }}</div>
-						<div class="group-fields">
-							@for (param of groupedParameters[groupName]; track param) {
-								@if (isVisible(param)) {
-									@switch (param.type) {
-										@case ('boolean') {
-										<div class="param-field param-toggle">
-										<mat-slide-toggle [formControlName]="param.id" [matTooltip]="getTooltip(param)" matTooltipPosition="above">
-										{{ param.description || param.name }}
-										</mat-slide-toggle>
-										</div>
-										}
-										@case ('enum') {
-										<mat-form-field appearance="outline" class="param-field">
-										<mat-label>{{ param.name }}</mat-label>
-										<mat-select [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above">
-										@for (option of param.enumValues; track option) {
-										<mat-option [value]="getEnumOptionValue(option)">{{ getEnumOptionLabel(option) }}</mat-option>
-										}
-										</mat-select>
-										@if (param.default !== undefined) {
-										<mat-hint>Default: {{ param.default }}</mat-hint>
-										}
-										</mat-form-field>
-										}
-										@case ('string') {
-										@if (param.upload) {
-										<div class="param-field">
-										<mat-form-field appearance="outline">
-										<mat-label>{{ param.name }}</mat-label>
-										<input type="file" #fileInput [id]="'file-' + param.id" (change)="onFileSelected($event, param.id)" style="display: none;" />
-										<input matInput [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above" readonly />
-										<button mat-icon-button matSuffix type="button" (click)="fileInput.click()" [matTooltip]="'Select file'" matTooltipPosition="above">
-										<mat-icon>attach_file</mat-icon>
-										</button>
-										@if (param.default !== undefined) {
-										<mat-hint>Default: {{ param.default }}</mat-hint>
-										}
-										</mat-form-field>
-										</div>
-										} @else {
-										<mat-form-field appearance="outline" class="param-field">
-										<mat-label>{{ param.name }}</mat-label>
-										<input matInput [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above" />
-										@if (param.default !== undefined) {
-										<mat-hint>Default: {{ param.default }}</mat-hint>
-										}
-										</mat-form-field>
-										}
-										}
-										@case ('number') {
-										<mat-form-field appearance="outline" class="param-field">
-										<mat-label>{{ param.name }}</mat-label>
-										<input matInput type="number" [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above" />
-										@if (param.default !== undefined) {
-										<mat-hint>Default: {{ param.default }}</mat-hint>
-										}
-										</mat-form-field>
-										}
-										@default {
-											<div class="param-field unsupported-param">
-											Unsupported parameter type: {{ param.type }}
-											</div>
-										}
-									}
-								}
-							}
-						</div>
-					</div>
-					}
-				}
-			</div>
+			@for (groupName of groupNames; track groupName) {
+				<app-parameter-group
+					[groupName]="groupName"
+					[groupedParameters]="groupedParameters"
+					[form]="form"
+					[showAdvanced]="showAdvanced()"
+				/>
+			}
+		</div>
 			@if (hasAdvancedParams()) {
 				<div class="advanced-toggle" (click)="toggleAdvanced()" (keyup.enter)="toggleAdvanced()" (keyup.space)="toggleAdvanced()" tabindex="0" role="button" [attr.aria-expanded]="showAdvanced()">
 					<span class="toggle-icon">{{ showAdvanced() ? '▼' : '▶' }}</span>
 					<span class="toggle-text">{{ showAdvanced() ? 'Hide' : 'Show' }} Advanced Options</span>
 				</div>
 			}
-			@if (hasError()) {
-				<div class="dialog-actions">
-					<button mat-stroked-button color="primary" type="button" (click)="close()">Close</button>
-				</div>
-			} @else {
-				<div class="dialog-actions">
-					<button mat-stroked-button color="primary" type="button" (click)="close()">Cancel</button>
-					<button mat-flat-button color="accent" type="submit" [disabled]="form.invalid || loading()">Install</button>
-				</div>
+			<ng-content select="[slot=actions]"></ng-content>
+			@if (!customActions) {
+				@if (hasError()) {
+					<div class="dialog-actions">
+						<button mat-stroked-button color="primary" type="button" (click)="close()">Close</button>
+					</div>
+				} @else {
+					<div class="dialog-actions">
+						<button mat-stroked-button color="primary" type="button" (click)="close()">Cancel</button>
+						<button mat-flat-button color="accent" type="submit" [disabled]="form.invalid || loading()">Install</button>
+					</div>
+				}
 			}
 		}
 	@if (loading()) {
