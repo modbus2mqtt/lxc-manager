@@ -23,6 +23,13 @@ This guide describes how to create applications for LXC Manager, focusing on dif
   - [Template Execution Order](#step-4-template-execution-order)
   - [Local Path for Development](#step-5-local-path-for-development)
   - [Validation](#step-6-validation)
+- [Application Creation with Frameworks](#application-creation-with-frameworks)
+  - [What are Frameworks?](#what-are-frameworks)
+  - [Framework Structure](#framework-structure)
+  - [Creating Applications from Frameworks](#creating-applications-from-frameworks)
+  - [Framework-Provided Base Functionality](#framework-provided-base-functionality)
+  - [Adding Special Features](#adding-special-features)
+  - [Example: Modbus2Mqtt](#example-modbus2mqtt)
 - [Template Reference](#template-reference)
   - [Shared Templates](#shared-templates)
   - [Custom Templates](#custom-templates)
@@ -680,6 +687,137 @@ This will:
 - Check for missing required parameters
 
 **Always validate before committing!**
+
+## Application Creation with Frameworks
+
+Frameworks provide a streamlined way to create new applications by offering a pre-configured base with common functionality. They eliminate the need to manually set up container creation, volume mounting, service management, and user management for each new application.
+
+### What are Frameworks?
+
+Frameworks are simplified application definitions that:
+- **Extend a base application**: Frameworks must extend an existing "empty" base application that provides the core templates
+- **Define properties**: Frameworks specify which parameters from the base application should be exposed and configurable
+- **No templates**: Frameworks don't define their own templates - they inherit all templates from the base application
+- **No description**: Frameworks are implementation details, not user-facing applications
+
+Frameworks are located in `json/frameworks/` and follow a simple structure:
+
+```json
+{
+  "name": "npm-nodejs",
+  "extends": "npm-nodejs",
+  "properties": [
+    "hostname",
+    "ostype",
+    "packages",
+    "command",
+    "command_args",
+    "package",
+    "owned_paths",
+    "uid",
+    "group",
+    "username",
+    "volumes"
+  ]
+}
+```
+
+### Framework Structure
+
+A framework JSON file contains:
+
+- **`name`** (required): Display name for the framework
+- **`extends`** (required): Reference to the base application (e.g., `"npm-nodejs"` or `"local:npm-nodejs"`)
+- **`properties`** (required): Array of parameter IDs that should be exposed. Each property can be:
+  - A simple string: `"hostname"` - parameter is required
+  - An object with `id` and `default: true`: `{"id": "hostname", "default": true}` - parameter has a default value
+- **`icon`** (optional): Icon filename (defaults to `"icon.png"`)
+
+### Creating Applications from Frameworks
+
+You can create applications from frameworks using the web interface or programmatically:
+
+1. **Select a framework**: Choose a framework that matches your application type (e.g., `npm-nodejs` for Node.js applications)
+2. **Configure application properties**: Provide name, ID, description, and optional icon
+3. **Set parameter values**: Configure all framework-defined parameters
+4. **Create the application**: The system automatically generates:
+   - `application.json` with proper `extends` and template list
+   - `{applicationId}-parameters.json` template with all parameter values
+   - Application directory structure
+
+The generated application will:
+- Extend the same base application as the framework
+- Include all templates from the base application
+- Have a prepended `{applicationId}-parameters.json` template that sets all configured parameters
+
+### Framework-Provided Base Functionality
+
+Frameworks provide a solid foundation for common application needs:
+
+#### Container Creation
+- Automatic LXC container creation and configuration
+- OS template selection and setup
+- Network configuration
+
+#### Volume Mounting
+- Persistent data storage via volume mounts
+- Automatic path ownership configuration
+- Volume management
+
+#### Service Creation
+- Systemd service setup
+- Service user configuration
+- Automatic service start/stop handling
+
+#### User Management
+- Non-root user creation
+- UID/GID configuration
+- Group assignment
+- Home directory setup
+
+These core features are handled by shared templates in the base application, so you don't need to configure them manually for each new application.
+
+### Adding Special Features
+
+While frameworks provide the essential base functionality, you can easily add specialized features to applications created from frameworks. Common additions include:
+
+- **USB device sharing**: Map USB devices to containers
+- **Serial port access**: Grant access to serial devices
+- **Additional volumes**: Mount extra storage locations
+- **Custom scripts**: Add application-specific setup or configuration scripts
+- **Environment variables**: Configure runtime environment
+- **Network ports**: Expose additional network ports
+
+#### Example: Modbus2Mqtt
+
+The `modbus2mqtt` application demonstrates how to add special features to a framework-based application:
+
+```json
+{
+  "name": "Modbus2Mqtt Gateway",
+  "description": "Modbus2Mqtt Gateway from Modbus RTU/TCP to MQTT and vice versa",
+  "extends": "node-red",
+  "installation": [
+    {
+      "name": "110-map-serial.json",
+      "after": "100-create-configure-lxc.json"
+    }
+  ]
+}
+```
+
+This application:
+1. **Extends `node-red`**: Inherits all base functionality (container, volumes, service, user management)
+2. **Adds serial device mapping**: Includes `110-map-serial.json` template to enable USB/serial device access
+3. **Minimal configuration**: Only needs to specify the additional template, everything else comes from the base
+
+To add similar features to your framework-based application:
+
+1. **Create or use an existing template**: For serial devices, use `110-map-serial.json` from shared templates
+2. **Add to installation list**: Include the template in your `application.json` with proper ordering (using `before`/`after` directives)
+3. **Configure parameters**: If the template requires parameters, add them to your `set-parameters.json` or the generated `{applicationId}-parameters.json`
+
+**Note**: Frameworks focus on common, reusable functionality. Specialized features like USB device sharing are intentionally left out of frameworks to keep them simple and focused. They can always be added later to individual applications as needed.
 
 ## Template Reference
 
