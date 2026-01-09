@@ -18,7 +18,6 @@ beforeAll(() => {
   fs.writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
 
   // Initialize PersistenceManager (schemas + paths) using test directory
-  const storageContextPath = path.join(testDir, "storagecontext.json");
   // Close existing instance if any
   try {
     PersistenceManager.getInstance().close();
@@ -34,7 +33,7 @@ afterAll(() => {
     if (fs.existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true });
     }
-  } catch (e: any) {
+  } catch {
     // Ignore cleanup errors
   }
 });

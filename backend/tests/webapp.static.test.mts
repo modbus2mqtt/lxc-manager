@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
@@ -32,7 +32,6 @@ describe("WebApp serves index.html", () => {
     writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
 
     // Minimal PersistenceManager init; paths won't be used for this test route
-    const storageContextPath = path.join(testDir, "storagecontext.json");
     // Close existing instance if any
     try {
       PersistenceManager.getInstance().close();
@@ -49,7 +48,7 @@ describe("WebApp serves index.html", () => {
     try {
       if (tempDir) rmSync(tempDir, { recursive: true, force: true });
       if (testDir) rmSync(testDir, { recursive: true, force: true });
-    } catch (e: any) {
+    } catch {
       // Ignore cleanup errors
     }
   });

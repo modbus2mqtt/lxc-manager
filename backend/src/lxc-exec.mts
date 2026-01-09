@@ -75,11 +75,13 @@ export async function exec(
       process.exit(2);
     }
 
+    const pm = PersistenceManager.getInstance();
+    const contextManager = pm.getContextManager();
     const templateProcessor = new TemplateProcessor({
       schemaPath,
       jsonPath,
       localPath: resolvedLocalPath,
-    });
+    }, contextManager, pm.getPersistence());
 
     if (!paramsFile) {
       const veContext = PersistenceManager.getInstance().getContextManager().getCurrentVEContext();

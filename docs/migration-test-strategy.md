@@ -113,3 +113,7 @@ npm test
 3. **Stop bei Fehlern:** Keine weiteren Änderungen bis Tests grün sind
 4. **Checkin nach jeder Phase:** Nur wenn alle Tests grün sind
 
+
+
+
+

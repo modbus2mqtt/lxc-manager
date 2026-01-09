@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import { StorageContext } from "./storagecontext.mjs";
+import { PersistenceManager } from "./persistence/persistence-manager.mjs";
 import { VEConfigurationError, IApplication, IVEContext, IConfiguredPathes } from "./backend-types.mjs";
 import { TemplateProcessor, type IProcessedTemplate } from "./templateprocessor.mjs";
 import { ITemplateReference } from "./backend-types.mjs";
@@ -63,8 +63,8 @@ export class DocumentationGenerator {
     }
     // Note: Application-specific directories will be created in generateApplicationDocumentation
 
-    const storageContext = StorageContext.getInstance();
-    const allApps = storageContext.getAllAppNames();
+    const pm = PersistenceManager.getInstance();
+    const allApps = pm.getApplicationService().getAllAppNames();
 
     // Map to collect which applications use which templates
     const templateUsageMap = new Map<string, Set<string>>();  // template name -> set of app names
@@ -107,8 +107,8 @@ export class DocumentationGenerator {
    */
   private checkMissingMarkdownFiles(applicationName?: string): void {
     const missingFiles: string[] = [];
-    const storageContext = StorageContext.getInstance();
-    const allApps = storageContext.getAllAppNames();
+    const pm = PersistenceManager.getInstance();
+    const allApps = pm.getApplicationService().getAllAppNames();
 
     const appsToCheck = applicationName 
       ? [[applicationName, allApps.get(applicationName)!].filter(([, appPath]) => appPath)]
@@ -179,24 +179,34 @@ export class DocumentationGenerator {
     let parentApp: IApplication | null = null;
     
     try {
-      // Ensure StorageContext is initialized with correct paths
-      StorageContext.setInstance(
+      // Ensure PersistenceManager is initialized with correct paths
+      const storageContextPath = path.join(this.localPath, "storagecontext.json");
+      const secretFilePath = path.join(this.localPath, "secret.txt");
+      // Close existing instance if any
+      try {
+        PersistenceManager.getInstance().close();
+      } catch {
+        // Ignore if not initialized
+      }
+      PersistenceManager.initialize(
         this.localPath,
-        path.join(this.localPath, "storagecontext.json"),
-        path.join(this.localPath, "secret.txt"),
+        storageContextPath,
+        secretFilePath,
       );
+      const pm = PersistenceManager.getInstance();
+      const contextManager = pm.getContextManager();
       
       const templateProcessor = new TemplateProcessor({
         jsonPath: this.jsonPath,
         localPath: this.localPath,
         schemaPath: this.schemaPath,
-      });
+      }, contextManager, pm.getPersistence());
       
       // Create a dummy VEContext for loading
       const dummyVeContext: IVEContext = {
         host: "dummy",
         port: 22,
-        getStorageContext: () => StorageContext.getInstance(),
+        getStorageContext: () => contextManager as any,
         getKey: () => "ve_dummy",
       };
       

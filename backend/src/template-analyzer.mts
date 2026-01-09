@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { TemplateProcessor } from "./templateprocessor.mjs";
-import { StorageContext } from "./storagecontext.mjs";
+import { PersistenceManager } from "./persistence/persistence-manager.mjs";
 import { DocumentationPathResolver } from "./documentation-path-resolver.mjs";
 import { TemplatePathResolver } from "./template-path-resolver.mjs";
 import type { IApplication, IVEContext, IConfiguredPathes } from "./backend-types.mjs";
@@ -122,8 +122,9 @@ export class TemplateAnalyzer {
     const usingApplications: string[] = [];
     
     try {
-      const storageContext = StorageContext.getInstance();
-      const allApps = storageContext.getAllAppNames();
+      const pm = PersistenceManager.getInstance();
+      const storageContext = pm.getContextManager();
+      const allApps = pm.getApplicationService().getAllAppNames();
       
       // Normalize template name (remove .json extension)
       const normalizedTemplate = this.pathResolver.normalizeTemplateName(templateName);
@@ -190,7 +191,7 @@ export class TemplateAnalyzer {
                   jsonPath: this.configuredPathes.jsonPath,
                   localPath: this.configuredPathes.localPath,
                   schemaPath: this.configuredPathes.schemaPath,
-                });
+                }, storageContext, pm.getPersistence());
                 
                 const dummyVeContext: IVEContext = {
                   host: "dummy",

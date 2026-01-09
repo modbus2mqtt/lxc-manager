@@ -40,6 +40,7 @@ describe("FrameworkLoader", () => {
         schemaPath: path.join(repoRoot, "schemas"),
       },
       contextManager,
+      pm.getPersistence(),
     );
   });
 

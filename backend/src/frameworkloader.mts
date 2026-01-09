@@ -14,6 +14,7 @@ import { TemplateProcessor } from "./templateprocessor.mjs";
 import { TaskType, IParameter, IPostFrameworkCreateApplicationBody } from "./types.mjs";
 import { IVEContext } from "./backend-types.mjs";
 import { FileSystemPersistence } from "./persistence/filesystem-persistence.mjs";
+import { IFrameworkPersistence, IApplicationPersistence, ITemplatePersistence } from "./persistence/interfaces.mjs";
 
 export interface IReadFrameworkOptions {
   framework?: IFramework;
@@ -25,14 +26,11 @@ export class FrameworkLoader {
   constructor(
     private pathes: IConfiguredPathes,
     private storage: StorageContext | ContextManager = StorageContext.getInstance(),
+    private persistence: IFrameworkPersistence & IApplicationPersistence & ITemplatePersistence,
     private applicationLoader?: ApplicationLoader,
   ) {
     if (!this.applicationLoader) {
-      const persistence = new FileSystemPersistence(
-        this.pathes,
-        this.storage.getJsonValidator(),
-      );
-      this.applicationLoader = new ApplicationLoader(this.pathes, persistence, this.storage);
+      this.applicationLoader = new ApplicationLoader(this.pathes, this.persistence, this.storage);
     }
   }
 
@@ -40,55 +38,7 @@ export class FrameworkLoader {
     framework: string,
     opts: IReadFrameworkOptions,
   ): IFramework {
-    let frameworkPath: string | undefined;
-    let frameworkFile: string | undefined;
-    let frameworkName = framework;
-
-    if (framework.startsWith("json:")) {
-      frameworkName = framework.replace(/^json:/, "");
-      frameworkPath = path.join(this.pathes.jsonPath, "frameworks");
-      frameworkFile = path.join(frameworkPath, `${frameworkName}.json`);
-      if (!fs.existsSync(frameworkFile)) {
-        throw new Error(`framework json not found for ${framework}`);
-      }
-    } else {
-      const localFile = path.join(
-        this.pathes.localPath,
-        "frameworks",
-        `${framework}.json`,
-      );
-      const jsonFile = path.join(
-        this.pathes.jsonPath,
-        "frameworks",
-        `${framework}.json`,
-      );
-      if (fs.existsSync(localFile)) {
-        frameworkFile = localFile;
-        frameworkPath = path.dirname(localFile);
-      } else if (fs.existsSync(jsonFile)) {
-        frameworkFile = jsonFile;
-        frameworkPath = path.dirname(jsonFile);
-      } else {
-        throw new Error(`framework json not found for ${framework}`);
-      }
-    }
-
-    const validator = this.storage.getJsonValidator();
-    let frameworkData: IFramework;
-    try {
-      frameworkData = validator.serializeJsonFileWithSchema<IFramework>(
-        frameworkFile,
-        "framework",
-      );
-    } catch (e: Error | any) {
-      this.addErrorToOptions(opts, e);
-      throw opts.error;
-    }
-
-    frameworkData.id = frameworkName;
-    opts.framework = frameworkData;
-    opts.frameworkPath = frameworkPath;
-    return frameworkData;
+    return this.persistence.readFramework(framework, opts);
   }
 
   public async getParameters(
@@ -116,7 +66,7 @@ export class FrameworkLoader {
       this.addErrorToOptions(opts, e);
     }
 
-    const templateProcessor = new TemplateProcessor(this.pathes, this.storage);
+    const templateProcessor = new TemplateProcessor(this.pathes, this.storage, this.persistence);
     const loaded = await templateProcessor.getParameters(
       frameworkData.extends,
       task,
@@ -164,7 +114,7 @@ export class FrameworkLoader {
 
     // Get all parameters from base application to find parameter definitions
     // No veContext needed - we only need parameter definitions, not execution
-    const templateProcessor = new TemplateProcessor(this.pathes, this.storage);
+    const templateProcessor = new TemplateProcessor(this.pathes, this.storage, this.persistence);
     const allParameters = await templateProcessor.getParameters(
       framework.extends,
       "installation",

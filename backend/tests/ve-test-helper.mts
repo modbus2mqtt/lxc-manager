@@ -17,6 +17,7 @@ export interface IApplication {
 }
 
 export interface IParameter {
+  id: string;
   name: string;
   type: "enum" | "string" | "number" | "boolean";
   enumValues?: string[];

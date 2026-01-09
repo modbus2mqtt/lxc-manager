@@ -22,7 +22,6 @@ describe("TemplateProcessor enum handling", () => {
     writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
 
     // Ensure global PersistenceManager instance is set for TemplateProcessor defaults
-    const storageContextPath = path.join(testDir, "storagecontext.json");
     // Close existing instance if any
     try {
       PersistenceManager.getInstance().close();

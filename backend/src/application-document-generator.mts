@@ -8,7 +8,7 @@ import { DocumentationPathResolver } from "./documentation-path-resolver.mjs";
 import { TemplateAnalyzer } from "./template-analyzer.mjs";
 import { TemplatePathResolver } from "./template-path-resolver.mjs";
 import type { IParameter, ICommand, TaskType, ITemplate } from "./types.mjs";
-import { StorageContext } from "./storagecontext.mjs";
+import { PersistenceManager } from "./persistence/persistence-manager.mjs";
 import { FileSystemPersistence } from "./persistence/filesystem-persistence.mjs";
 
 /**
@@ -298,14 +298,14 @@ export class ApplicationDocumentGenerator {
     parentName: string,
   ): Promise<IApplication | null> {
     try {
-      const storage = StorageContext.getInstance();
+      const pm = PersistenceManager.getInstance();
       const persistence = new FileSystemPersistence(
         {
           jsonPath: this.configuredPathes.jsonPath,
           localPath: this.configuredPathes.localPath,
           schemaPath: this.configuredPathes.schemaPath,
         },
-        storage.getJsonValidator(),
+        pm.getJsonValidator(),
       );
       const appLoader = new ApplicationLoader(
         {

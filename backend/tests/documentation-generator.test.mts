@@ -406,12 +406,8 @@ echo "Shared script"
 
       // Invalidate cache to ensure new application is found
       const contextManager = PersistenceManager.getInstance().getContextManager();
-      if (storageContext && typeof (storageContext as any).invalidateCache === "function") {
-        (storageContext as any).invalidateCache();
-      }
-      // Also invalidate via PersistenceManager if available
+      // Invalidate via PersistenceManager
       try {
-        const { PersistenceManager } = await import("@src/persistence/persistence-manager.mjs");
         const pm = PersistenceManager.getInstance();
         pm.getPersistence().invalidateCache();
       } catch {

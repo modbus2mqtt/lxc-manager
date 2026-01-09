@@ -23,6 +23,7 @@ import { ScriptValidator } from "@src/scriptvalidator.mjs";
 import { StorageContext } from "./storagecontext.mjs";
 import { ContextManager } from "./context-manager.mjs";
 import { FileSystemPersistence } from "./persistence/filesystem-persistence.mjs";
+import { ITemplatePersistence, IApplicationPersistence } from "./persistence/interfaces.mjs";
 import { VeExecution } from "./ve-execution.mjs";
 import { TemplatePathResolver } from "./template-path-resolver.mjs";
 // ITemplateReference moved to backend-types.mts
@@ -75,7 +76,8 @@ export class TemplateProcessor extends EventEmitter {
   resolvedParams: IResolvedParam[] = [];
   constructor(
     private pathes: IConfiguredPathes,
-    private storageContext: StorageContext | ContextManager = StorageContext.getInstance(),
+    private storageContext: ContextManager,
+    private persistence: IApplicationPersistence & ITemplatePersistence,
   ) {
     super();
   }
@@ -91,11 +93,7 @@ export class TemplateProcessor extends EventEmitter {
       error: new VEConfigurationError("", applicationName),
       taskTemplates: [],
     };
-    const persistence = new FileSystemPersistence(
-      this.pathes,
-      this.storageContext.getJsonValidator(),
-    );
-    const appLoader = new ApplicationLoader(this.pathes, persistence);
+    const appLoader = new ApplicationLoader(this.pathes, this.persistence);
     let application = appLoader.readApplicationJson(applicationName, readOpts);
     // Don't throw immediately - collect all errors first (including template processing errors)
     // Errors from readApplicationJson will be added to the errors array during template processing
@@ -343,16 +341,13 @@ export class TemplateProcessor extends EventEmitter {
       });
       return;
     }
-    let tmplData: ITemplate;
-    // Validate template against schema
+    let tmplData: ITemplate | null;
+    // Load template using persistence (with caching)
     try {
-      // Use the JsonValidator factory (singleton)
-      const validator = this.storageContext.getJsonValidator();
-      tmplData = validator.serializeJsonFileWithSchema<ITemplate>(
-        tmplPath,
-        "template.schema.json",
-        // Check for icon.png in the application directory
-      );
+      tmplData = this.persistence.loadTemplate(tmplPath);
+      if (!tmplData) {
+        throw new JsonError(`Failed to load template from ${tmplPath}`);
+      }
       // Note: outputs on template level are no longer supported
       // All outputs should be defined on command level
       // Properties commands will be handled directly in the resolvedParams section below
@@ -532,11 +527,12 @@ export class TemplateProcessor extends EventEmitter {
             // If it only defines it as a parameter (not as output), it's not a conflict
             try {
               const conflictingTmplPath = conflictingTemplateInfo.path;
-              const validator = this.storageContext.getJsonValidator();
-              const conflictingTmplData = validator.serializeJsonFileWithSchema<ITemplate>(
-                conflictingTmplPath,
-                "template.schema.json",
-              );
+              const conflictingTmplData = this.persistence.loadTemplate(conflictingTmplPath);
+              if (!conflictingTmplData) {
+                // If we can't load the template, assume it sets output (conservative approach)
+                conflictingTemplateSetsOutput = true;
+                continue;
+              }
               
               // Check if the conflicting template sets this ID as output (in outputs or properties)
               conflictingTemplateSetsOutput = false;

@@ -69,6 +69,7 @@ describe("FrameworkLoader.createApplicationFromFramework", () => {
         schemaPath: path.join(repoRoot, "schemas"),
       },
       contextManager,
+      pm.getPersistence(),
     );
   });
 

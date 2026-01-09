@@ -68,13 +68,14 @@ export class PersistenceManager {
     this.frameworkService = new FrameworkService(this.persistence);
 
     // Initialize ContextManager (no longer a singleton itself)
-    // Pass pathes and validator to avoid duplication
+    // Pass pathes, validator and persistence to avoid duplication
     this.contextManager = new ContextManager(
       localPath,
       storageContextFilePath,
       secretFilePath,
       this.pathes,
       this.jsonValidator,
+      this.persistence,
     );
   }
 

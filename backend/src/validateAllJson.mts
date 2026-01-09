@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { JsonValidator } from "./jsonvalidator.mjs";
-import { StorageContext } from "./storagecontext.mjs";
+import { PersistenceManager } from "./persistence/persistence-manager.mjs";
 import { ApplicationLoader } from "./apploader.mjs";
 import { IReadApplicationOptions } from "./backend-types.mjs";
 import { TaskType } from "./types.mjs";
@@ -307,7 +307,7 @@ export async function validateAllJson(localPathArg?: string): Promise<void> {
   // Validate scripts and templates referenced in applications
   console.log("\nValidating scripts and templates in applications...");
   
-  // Initialize StorageContext for template processing
+  // Initialize PersistenceManager for template processing
   // Use the same localPath as above (already defined)
   const storageContextPath = path.join(localPath, "storagecontext.json");
   const secretFilePath = path.join(localPath, "secret.txt");
@@ -322,20 +322,26 @@ export async function validateAllJson(localPathArg?: string): Promise<void> {
     fs.writeFileSync(secretFilePath, "dummy-secret-for-validation");
   }
   
-  StorageContext.setInstance(localPath, storageContextPath, secretFilePath);
-  const storageContext = StorageContext.getInstance();
+  // Close existing instance if any
+  try {
+    PersistenceManager.getInstance().close();
+  } catch {
+    // Ignore if not initialized
+  }
+  PersistenceManager.initialize(localPath, storageContextPath, secretFilePath);
+  const pm = PersistenceManager.getInstance();
+  const storageContext = pm.getContextManager();
   
-  // Get pathes from storageContext (similar to how it's done in lxc-exec.mts)
+  // Get pathes from PersistenceManager (similar to how it's done in lxc-exec.mts)
   // Use the same paths as webapp.mts
   const configuredPathes = {
     schemaPath: schemasDir,
     jsonPath: jsonPath,
     localPath: localPath,
   };
-  const storage = StorageContext.getInstance();
   const persistence = new FileSystemPersistence(
     configuredPathes,
-    storage.getJsonValidator(),
+    pm.getJsonValidator(),
   );
   const appLoader = new ApplicationLoader(configuredPathes, persistence);
   
@@ -406,7 +412,7 @@ export async function validateAllJson(localPathArg?: string): Promise<void> {
           // - Script existence checks
           // - Duplicate output/property ID checks
           // - Skip logic validation
-          const templateProcessor = new TemplateProcessor(configuredPathes, storageContext);
+          const templateProcessor = new TemplateProcessor(configuredPathes, storageContext, pm.getPersistence());
           await templateProcessor.loadApplication(appName, task, dummyVeContext);
           
           console.log(`✔ Validated application: ${relPath} (task: ${task})`);

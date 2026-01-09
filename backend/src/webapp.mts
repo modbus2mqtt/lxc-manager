@@ -20,7 +20,7 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "node:url";
 import fs from "fs";
-import { StorageContext } from "./storagecontext.mjs";
+import { PersistenceManager } from "./persistence/persistence-manager.mjs";
 import { ContextManager } from "./context-manager.mjs";
 import { Ssh } from "./ssh.mjs";
 import { IVEContext, VEConfigurationError } from "./backend-types.mjs";
@@ -158,7 +158,7 @@ export class VEWebApp {
       return { message: String(err) };
     }
   }
-  constructor(storageContext: StorageContext | ContextManager) {
+  constructor(private storageContext:  ContextManager) {
     this.app = express();
     this.httpServer = http.createServer(this.app);
     // No socket.io needed anymore
@@ -397,9 +397,8 @@ export class VEWebApp {
         const application: string = req.params.application;
         const task: string = req.params.task;
         const veContextKey: string = req.params.veContext;
-        const storageContext = StorageContext.getInstance();
         const ctx: IVEContext | null =
-          storageContext.getVEContextByKey(veContextKey);
+          this.storageContext.getVEContextByKey(veContextKey);
         if (!ctx) {
           return res
             .status(404)
@@ -466,7 +465,8 @@ export class VEWebApp {
     this.app.get(ApiUri.FrameworkNames, (req, res) => {
       try {
         const frameworkNames: Array<{ id: string; name: string }> = [];
-        const allFrameworks = storageContext.getAllFrameworkNames();
+        const pm = PersistenceManager.getInstance();
+        const allFrameworks = pm.getFrameworkService().getAllFrameworkNames();
         
         for (const [frameworkId, frameworkPath] of allFrameworks) {
           try {
@@ -559,11 +559,12 @@ export class VEWebApp {
             return res.status(400).json({ error: "Missing description" });
           }
 
+          const pm = PersistenceManager.getInstance();
           const frameworkLoader = new FrameworkLoader(
             {
-              schemaPath: storageContext.getJsonPath().replace(/\/json$/, "/schemas"),
-              jsonPath: storageContext.getJsonPath(),
-              localPath: storageContext.getLocalPath(),
+              schemaPath: pm.getPathes().schemaPath,
+              jsonPath: pm.getPathes().jsonPath,
+              localPath: pm.getPathes().localPath,
             },
             storageContext,
           );

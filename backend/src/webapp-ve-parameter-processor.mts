@@ -3,6 +3,7 @@ import path from "path";
 import { StorageContext } from "./storagecontext.mjs";
 import { IVEContext } from "./backend-types.mjs";
 import { IParameter, IPostVeConfigurationBody, TaskType } from "./types.mjs";
+import { ContextManager } from "./context-manager.mjs";
 
 /**
  * Processes parameters for VE configuration, including file uploads and vmInstallContext.
@@ -14,7 +15,7 @@ export class WebAppVeParameterProcessor {
   async processParameters(
     params: IPostVeConfigurationBody["params"],
     loadedParameters: IParameter[],
-    storageContext: StorageContext,
+    storageContext: ContextManager,
   ): Promise<Array<{ id: string; value: string | number | boolean }>> {
     return await Promise.all(
       params.map(async (p) => {

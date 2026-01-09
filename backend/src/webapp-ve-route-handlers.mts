@@ -1,6 +1,6 @@
 import { IVEContext, IVMInstallContext, VEConfigurationError } from "./backend-types.mjs";
 import { PersistenceManager } from "./persistence/persistence-manager.mjs";
-import { ContextManager, VMInstallContext } from "./context-manager.mjs";
+import { VMInstallContext } from "./context-manager.mjs";
 import { TaskType, IPostVeConfigurationBody, IVeExecuteMessagesResponse, IJsonError } from "./types.mjs";
 import { WebAppVeMessageManager } from "./webapp-ve-message-manager.mjs";
 import { WebAppVeRestartManager } from "./webapp-ve-restart-manager.mjs";
@@ -211,12 +211,12 @@ export class WebAppVeRouteHandlers {
       );
       const commands = loaded.commands;
       const defaults = this.parameterProcessor.buildDefaults(loaded.parameters);
-
+      const contextManager = PersistenceManager.getInstance().getContextManager();
       // Process parameters: for upload parameters with "local:" prefix, read file and base64 encode
       const processedParams = await this.parameterProcessor.processParameters(
         paramsToUse,
         loaded.parameters,
-        storageContext,
+        contextManager,
       );
 
       // Start ProxmoxExecution
@@ -268,8 +268,7 @@ export class WebAppVeRouteHandlers {
   /**
    * Handles GET /api/ve/execute/:veContext
    */
-  handleGetMessages(): IVeExecuteMessagesResponse {
-    const storageContext = StorageContext.getInstance();
+  handleGetMessages(veContext: IVEContext): IVeExecuteMessagesResponse {
     // Add vmInstallKey to each message group if it exists
     const messages = this.messageManager.messages.map((group) => {
       // If vmInstallKey is already set, keep it
@@ -277,25 +276,19 @@ export class WebAppVeRouteHandlers {
         return group;
       }
       // Try to find vmInstallContext by looking up VE contexts
-      // We need to find the hostname from any VE context
-      for (const key of storageContext.keys().filter((k) => k.startsWith("ve_"))) {
-        const veContext = storageContext.getVEContextByKey(key.replace("ve_", ""));
-        if (veContext) {
-          const hostname = typeof veContext.host === "string" 
-            ? veContext.host 
-            : (veContext.host as any)?.host || "unknown";
-          const vmInstallContext = storageContext.getVMInstallContextByHostnameAndApplication(
-            hostname,
+      const contextManager = PersistenceManager.getInstance().getContextManager();
+      
+          const vmInstallContext = contextManager.getVMInstallContextByHostnameAndApplication(
+            veContext.host,
             group.application,
           );
           if (vmInstallContext) {
-            const vmInstallKey = `vminstall_${hostname}_${group.application}`;
+            const vmInstallKey = `vminstall_${veContext.host}_${group.application}`;
             // Update the group with vmInstallKey
             group.vmInstallKey = vmInstallKey;
-            break;
           }
-        }
-      }
+
+      
       return group;
     });
     return messages;
@@ -313,8 +306,8 @@ export class WebAppVeRouteHandlers {
       return { success: false, error: "Restart info not found", statusCode: 404 };
     }
 
-    const storageContext = StorageContext.getInstance();
-    const ctx = storageContext.getVEContextByKey(veContextKey);
+    const contextManager = PersistenceManager.getInstance().getContextManager();
+    const ctx = contextManager.getVEContextByKey(veContextKey);
     if (!ctx) {
       return { success: false, error: "VE context not found", statusCode: 404 };
     }
@@ -377,7 +370,7 @@ export class WebAppVeRouteHandlers {
     const processedParams = await this.parameterProcessor.processParameters(
       paramsFromRestartInfo,
       loaded.parameters,
-      storageContext,
+      PersistenceManager.getInstance().getContextManager(),
     );
 
     const inputs = processedParams.map((p) => ({
@@ -409,7 +402,7 @@ export class WebAppVeRouteHandlers {
     const hostname = typeof veCtxToUse.host === "string" 
       ? veCtxToUse.host 
       : (veCtxToUse.host as any)?.host || "unknown";
-    const vmInstallContext = storageContext.getVMInstallContextByHostnameAndApplication(
+    const vmInstallContext = contextManager.getVMInstallContextByHostnameAndApplication(
       hostname,
       application,
     );
@@ -430,14 +423,14 @@ export class WebAppVeRouteHandlers {
     vmInstallKey: string,
     veContextKey: string,
   ): Promise<{ success: boolean; restartKey?: string; vmInstallKey?: string; error?: string; errorDetails?: IJsonError; statusCode?: number }> {
-    const storageContext = StorageContext.getInstance();
-    const ctx = storageContext.getVEContextByKey(veContextKey);
+    const contextManager = PersistenceManager.getInstance().getContextManager();
+    const ctx = contextManager.getVEContextByKey(veContextKey);
     if (!ctx) {
       return { success: false, error: "VE context not found", statusCode: 404 };
     }
 
     // Get vmInstallContext
-    const vmInstallContextValue = storageContext.get(vmInstallKey);
+    const vmInstallContextValue = contextManager.getVMInstallContextByVmInstallKey(vmInstallKey);
     if (!vmInstallContextValue || !(vmInstallContextValue instanceof VMInstallContext)) {
       return { success: false, error: "VM install context not found", statusCode: 404 };
     }
@@ -489,7 +482,7 @@ export class WebAppVeRouteHandlers {
     const processedParams = await this.parameterProcessor.processParameters(
       installCtx.changedParams,
       loaded.parameters,
-      storageContext,
+      PersistenceManager.getInstance().getContextManager(),
     );
 
     const inputs = processedParams.map((p) => ({

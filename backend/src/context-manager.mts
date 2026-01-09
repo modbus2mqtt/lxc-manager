@@ -11,6 +11,7 @@ import { TemplateProcessor } from "./templateprocessor.mjs";
 import { ISsh, TaskType } from "./types.mjs";
 import { Context } from "./context.mjs";
 import { Ssh } from "./ssh.mjs";
+import { IApplicationPersistence, ITemplatePersistence } from "./persistence/interfaces.mjs";
 
 export class VMContext implements IVMContext {
   vmid: number;
@@ -47,7 +48,7 @@ class VEContext implements IVEContext {
   port?: number;
   current?: boolean;
   private contextManager: ContextManager;
-  constructor(data: IVEContext, contextManager: ContextManager) {
+  constructor(data: ISsh, contextManager: ContextManager) {
     this.host = data.host;
     if (data.port !== undefined) this.port = data.port;
     if (data.current !== undefined) this.current = data.current;
@@ -75,6 +76,7 @@ class VEContext implements IVEContext {
 export class ContextManager extends Context implements IContext {
   private pathes: IConfiguredPathes;
   jsonValidator: JsonValidator;
+  private persistence: IApplicationPersistence & ITemplatePersistence;
 
   constructor(
     localPath: string,
@@ -82,10 +84,12 @@ export class ContextManager extends Context implements IContext {
     secretFilePath: string,
     pathes: IConfiguredPathes,
     jsonValidator: JsonValidator,
+    persistence: IApplicationPersistence & ITemplatePersistence,
   ) {
     super(storageContextFilePath, secretFilePath);
     this.pathes = pathes;
     this.jsonValidator = jsonValidator;
+    this.persistence = persistence;
     this.loadContexts("vm", VMContext);
     // VEContext needs ContextManager reference
     // We need to manually load VE contexts since loadContexts doesn't support factory functions
@@ -122,7 +126,7 @@ export class ContextManager extends Context implements IContext {
   }
 
   getTemplateProcessor(): TemplateProcessor {
-    return new TemplateProcessor(this.pathes, this);
+    return new TemplateProcessor(this.pathes, this, this.persistence);
   }
   getCurrentVEContext(): IVEContext | null {
     for (const ctx of this.keys()
@@ -147,7 +151,7 @@ export class ContextManager extends Context implements IContext {
     this.set(key, new VMContext(vmContext));
     return key;
   }
-  setVEContext(veContext: IVEContext): string {
+  setVEContext(veContext: ISsh): string {
     const key = `ve_${veContext.host}`;
     this.set(key, new VEContext(veContext, this));
     return key;
@@ -187,6 +191,15 @@ export class ContextManager extends Context implements IContext {
   ): IVMInstallContext | null {
     const key = `vminstall_${hostname}_${application}`;
     const value = this.get(key);
+    if (value instanceof VMInstallContext) {
+      return value as IVMInstallContext;
+    }
+    return null;
+  }
+
+  /** Find a VMInstallContext by vmInstallKey (format: vminstall_${hostname}_${application}) */
+  getVMInstallContextByVmInstallKey(vmInstallKey: string): IVMInstallContext | null {
+    const value = this.get(vmInstallKey);
     if (value instanceof VMInstallContext) {
       return value as IVMInstallContext;
     }

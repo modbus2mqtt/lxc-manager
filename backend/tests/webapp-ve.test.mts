@@ -1,16 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
 import path from "node:path";
 import fs from "node:fs";
-import os from "node:os";
 import { PersistenceManager } from "@src/persistence/persistence-manager.mjs";
 import { ContextManager } from "@src/context-manager.mjs";
-import { WebAppVE } from "@src/webapp-ve.mts";
 import { ApiUri, IPostVeConfigurationBody } from "@src/types.mjs";
-import { IVEContext } from "@src/backend-types.mjs";
 import { ProxmoxTestHelper } from "@tests/ve-test-helper.mjs";
 import { IRestartInfo } from "@src/ve-execution.mjs";
+import { WebAppVE } from "@src/webapp-ve.mjs";
 
 describe("WebAppVE API", () => {
   let app: express.Application;
@@ -47,6 +45,37 @@ describe("WebAppVE API", () => {
       jsonPath: helper.jsonDir,
       schemaPath: helper.schemaDir,
     };
+    // Also update Persistence handlers' paths
+    const persistence = (pm as any).persistence;
+    if (persistence) {
+      (persistence as any).pathes = {
+        localPath: helper.localDir,
+        jsonPath: helper.jsonDir,
+        schemaPath: helper.schemaDir,
+      };
+      // Update handler paths
+      if ((persistence as any).applicationHandler) {
+        ((persistence as any).applicationHandler as any).pathes = {
+          localPath: helper.localDir,
+          jsonPath: helper.jsonDir,
+          schemaPath: helper.schemaDir,
+        };
+      }
+      if ((persistence as any).templateHandler) {
+        ((persistence as any).templateHandler as any).pathes = {
+          localPath: helper.localDir,
+          jsonPath: helper.jsonDir,
+          schemaPath: helper.schemaDir,
+        };
+      }
+      if ((persistence as any).frameworkHandler) {
+        ((persistence as any).frameworkHandler as any).pathes = {
+          localPath: helper.localDir,
+          jsonPath: helper.jsonDir,
+          schemaPath: helper.schemaDir,
+        };
+      }
+    }
     // Also update ContextManager paths
     storageContext = pm.getContextManager();
     (storageContext as any).pathes = {
@@ -105,7 +134,6 @@ describe("WebAppVE API", () => {
           {
             name: "Test Command",
             command: "echo '[{\"id\": \"test\", \"value\": \"ok\"}]'",
-            outputs: ["test"],
           },
         ],
       });
@@ -227,7 +255,6 @@ describe("WebAppVE API", () => {
           {
             name: "Test Command",
             command: "echo '[{\"id\": \"test\", \"value\": \"ok\"}]'",
-            outputs: ["test"],
           },
         ],
       });
@@ -242,6 +269,7 @@ describe("WebAppVE API", () => {
         .post(configUrl)
         .send({
           params: [{ name: "hostname", value: "testhost" }],
+          changedParams: [{ name: "hostname", value: "testhost" }],
         } as IPostVeConfigurationBody)
         .expect(200);
 
@@ -346,7 +374,6 @@ describe("WebAppVE API", () => {
           {
             name: "Test Command",
             command: "echo '[{\"id\": \"test\", \"value\": \"ok\"}]'",
-            outputs: ["test"],
           },
         ],
       });

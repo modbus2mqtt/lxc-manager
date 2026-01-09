@@ -12,7 +12,7 @@ import { WebAppVeParameterProcessor } from "./webapp-ve-parameter-processor.mjs"
 import { WebAppVeExecutionSetup } from "./webapp-ve-execution-setup.mjs";
 import { WebAppVeRouteHandlers } from "./webapp-ve-route-handlers.mjs";
 import { PersistenceManager } from "./persistence/persistence-manager.mjs";
-import { ContextManager, VMInstallContext } from "./context-manager.mjs";
+import { VMInstallContext } from "./context-manager.mjs";
 
 export class WebAppVE {
   private messageManager: WebAppVeMessageManager;
@@ -75,9 +75,11 @@ export class WebAppVE {
       const { application, task, veContext: veContextKey } = req.params;
       
       // Set vmInstallContext in ContextManager if changedParams are provided
-      // Only create new context if it doesn't exist yet (preserve existing context for restarts)
+      // Update existing context with new changedParams if context exists
       let vmInstallKey: string | undefined;
-      if (req.body.changedParams && req.body.changedParams.length > 0) {
+      // Access changedParams from body (may be undefined if not provided)
+      const changedParams = req.body?.changedParams;
+      if (changedParams && Array.isArray(changedParams) && changedParams.length > 0) {
         const storageContext = PersistenceManager.getInstance().getContextManager();
         const veContext = storageContext.getVEContextByKey(veContextKey);
         if (veContext) {
@@ -94,16 +96,24 @@ export class WebAppVE {
           const existingKey = tempContext.getKey();
           const existingContext = storageContext.get(existingKey);
           
+          // Map changedParams from request
+          const mappedChangedParams = changedParams.map((p: any) => ({ name: p.name, value: p.value }));
+          
           if (existingContext instanceof VMInstallContext) {
-            // Context exists - use existing key (preserve persistent context)
-            vmInstallKey = existingKey;
+            // Context exists - update it with new changedParams
+            vmInstallKey = storageContext.setVMInstallContext({
+              hostname,
+              application,
+              task: task as TaskType,
+              changedParams: mappedChangedParams,
+            });
           } else {
             // Context doesn't exist - create new one
             vmInstallKey = storageContext.setVMInstallContext({
               hostname,
               application,
               task: task as TaskType,
-              changedParams: req.body.changedParams.map(p => ({ name: p.name, value: p.value })),
+              changedParams: mappedChangedParams,
             });
           }
         }
@@ -165,8 +175,15 @@ export class WebAppVE {
     });
 
     // GET /api/ve/execute/:veContext
-    this.app.get(ApiUri.VeExecute, (req, res) => {
-      const messages = this.routeHandlers.handleGetMessages();
+    this.app.get<{ veContext: string }>(ApiUri.VeExecute, (req, res) => {
+      const storageContext = PersistenceManager.getInstance().getContextManager();
+       const veContext = storageContext.getVEContextByKey(req.params.veContext);
+       if (!veContext) {
+        res.status(404).json({ error: "VE context not found" });
+        return;
+       }
+       
+      const messages = this.routeHandlers.handleGetMessages(veContext);
       this.returnResponse<IVeExecuteMessagesResponse>(res, messages);
     });
 

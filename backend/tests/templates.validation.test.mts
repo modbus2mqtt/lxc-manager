@@ -18,7 +18,6 @@ beforeAll(() => {
   fs.writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
 
   // Ensure PersistenceManager is initialized (schemas + paths)
-  const storageContextPath = path.join(testDir, "storagecontext.json");
   // Close existing instance if any
   try {
     PersistenceManager.getInstance().close();
