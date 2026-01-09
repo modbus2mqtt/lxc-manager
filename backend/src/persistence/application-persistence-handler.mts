@@ -32,9 +32,21 @@ export class ApplicationPersistenceHandler {
   constructor(
     private pathes: IConfiguredPathes,
     private jsonValidator: JsonValidator,
+    private enableCache: boolean = true,
   ) {}
 
   getAllAppNames(): Map<string, string> {
+    if (!this.enableCache) {
+      // Cache disabled: always scan fresh
+      const jsonApps = this.scanApplicationsDir(this.pathes.jsonPath);
+      const localApps = this.scanApplicationsDir(this.pathes.localPath);
+      const result = new Map(jsonApps);
+      for (const [name, appPath] of localApps) {
+        result.set(name, appPath);
+      }
+      return result;
+    }
+
     // JSON: Einmalig laden
     if (this.appNamesCache.json === null) {
       this.appNamesCache.json = this.scanApplicationsDir(this.pathes.jsonPath);
@@ -56,6 +68,10 @@ export class ApplicationPersistenceHandler {
   }
 
   listApplicationsForFrontend(): IApplicationWeb[] {
+    if (!this.enableCache) {
+      // Cache disabled: always build fresh
+      return this.buildApplicationList();
+    }
     // Cache prüfen (wird durch fs.watch invalidiert)
     if (this.applicationsListCache === null) {
       this.applicationsListCache = this.buildApplicationList();

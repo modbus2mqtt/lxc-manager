@@ -26,9 +26,21 @@ export class FrameworkPersistenceHandler {
   constructor(
     private pathes: IConfiguredPathes,
     private jsonValidator: JsonValidator,
+    private enableCache: boolean = true,
   ) {}
 
   getAllFrameworkNames(): Map<string, string> {
+    if (!this.enableCache) {
+      // Cache disabled: always scan fresh
+      const jsonFrameworks = this.scanFrameworksDir(this.pathes.jsonPath);
+      const localFrameworks = this.scanFrameworksDir(this.pathes.localPath);
+      const result = new Map(jsonFrameworks);
+      for (const [name, frameworkPath] of localFrameworks) {
+        result.set(name, frameworkPath);
+      }
+      return result;
+    }
+
     // JSON: Einmalig laden
     if (this.frameworkNamesCache.json === null) {
       this.frameworkNamesCache.json = this.scanFrameworksDir(

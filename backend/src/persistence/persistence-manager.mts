@@ -42,6 +42,9 @@ export class PersistenceManager {
     localPath: string,
     storageContextFilePath: string,
     secretFilePath: string,
+    enableCache: boolean = true,
+    jsonPath?: string,
+    schemaPath?: string,
   ) {
     // Create paths (same logic as StorageContext)
     // persistence-manager.mts is in backend/src/persistence/
@@ -50,8 +53,8 @@ export class PersistenceManager {
     const projectRoot = join(persistenceDir, "../../.."); // project root
     this.pathes = {
       localPath: localPath,
-      jsonPath: path.join(projectRoot, "json"),
-      schemaPath: path.join(projectRoot, "schemas"),
+      jsonPath: jsonPath || path.join(projectRoot, "json"),
+      schemaPath: schemaPath || path.join(projectRoot, "schemas"),
     };
 
     // Create JsonValidator (same logic as StorageContext)
@@ -61,6 +64,7 @@ export class PersistenceManager {
     this.persistence = new FileSystemPersistence(
       this.pathes,
       this.jsonValidator,
+      enableCache,
     );
 
     // Initialize Services
@@ -89,6 +93,9 @@ export class PersistenceManager {
     localPath: string,
     storageContextFilePath: string,
     secretFilePath: string,
+    enableCache: boolean = true,
+    jsonPath?: string,
+    schemaPath?: string,
   ): PersistenceManager {
     if (PersistenceManager.instance) {
       // Close existing instance (useful for tests)
@@ -98,6 +105,9 @@ export class PersistenceManager {
       localPath,
       storageContextFilePath,
       secretFilePath,
+      enableCache,
+      jsonPath,
+      schemaPath,
     );
     return PersistenceManager.instance;
   }

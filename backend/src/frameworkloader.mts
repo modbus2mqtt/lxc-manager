@@ -120,35 +120,21 @@ export class FrameworkLoader {
       "installation",
     );
 
-    // Check if application already exists in localPath or jsonPath
-    const localAppDir = path.join(
+    // Check if application already exists using persistence
+    const allAppNames = this.persistence.getAllAppNames();
+    if (allAppNames.has(request.applicationId)) {
+      const existingAppPath = allAppNames.get(request.applicationId)!;
+      throw new Error(
+        `Application ${request.applicationId} already exists at ${existingAppPath}`,
+      );
+    }
+
+    // Application directory will be created by writeApplication
+    const appDir = path.join(
       this.pathes.localPath,
       "applications",
       request.applicationId,
     );
-    const jsonAppDir = path.join(
-      this.pathes.jsonPath,
-      "applications",
-      request.applicationId,
-    );
-
-    if (fs.existsSync(localAppDir)) {
-      throw new Error(
-        `Application ${request.applicationId} already exists at ${localAppDir}`,
-      );
-    }
-    if (fs.existsSync(jsonAppDir)) {
-      throw new Error(
-        `Application ${request.applicationId} already exists at ${jsonAppDir}`,
-      );
-    }
-
-    // Create application directory in localPath
-    const appDir = localAppDir;
-    const templatesDir = path.join(appDir, "templates");
-
-    // Create directories
-    fs.mkdirSync(templatesDir, { recursive: true });
 
     // Build parameterValues map for quick lookup
     const paramValuesMap = new Map<string, string | number | boolean>();
@@ -205,10 +191,12 @@ export class FrameworkLoader {
     // Determine template name to prepend: derive from application-id or use set-parameters.json
     const prependTemplateName = `${request.applicationId}-parameters.json`;
 
-    // Write the prepend template
-    fs.writeFileSync(
-      path.join(templatesDir, prependTemplateName),
-      JSON.stringify(setParametersTemplate, null, 2),
+    // Write the prepend template using persistence
+    this.persistence.writeTemplate(
+      prependTemplateName,
+      setParametersTemplate,
+      false, // isShared = false (application-specific)
+      appDir, // appPath
     );
 
     // Create application.json
@@ -222,11 +210,8 @@ export class FrameworkLoader {
       installation: [prependTemplateName, ...baseInstallation],
     };
 
-    // Write application.json
-    fs.writeFileSync(
-      path.join(appDir, "application.json"),
-      JSON.stringify(applicationJson, null, 2),
-    );
+    // Write application.json using persistence
+    this.persistence.writeApplication(request.applicationId, applicationJson);
 
     // Write icon if provided
     if (request.iconContent) {

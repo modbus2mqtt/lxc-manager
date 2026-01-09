@@ -468,17 +468,20 @@ export class VEWebApp {
         const pm = PersistenceManager.getInstance();
         const allFrameworks = pm.getFrameworkService().getAllFrameworkNames();
         
-        for (const [frameworkId, frameworkPath] of allFrameworks) {
+        for (const [frameworkId] of allFrameworks) {
           try {
-            const frameworkData = JSON.parse(
-              fs.readFileSync(frameworkPath, "utf-8"),
+            const framework = pm.getFrameworkService().readFramework(
+              frameworkId,
+              {
+                error: new VEConfigurationError("", frameworkId),
+              },
             );
             frameworkNames.push({
               id: frameworkId,
-              name: frameworkData.name || frameworkId,
+              name: framework.name || frameworkId,
             });
           } catch {
-            // Skip invalid JSON files
+            // Skip invalid frameworks
           }
         }
         

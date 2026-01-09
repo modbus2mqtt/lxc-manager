@@ -99,11 +99,16 @@ export interface ITemplatePersistence extends IPersistence {
   /**
    * Writes template to local path
    * Invalidates cache automatically
+   * @param templateName Name of the template (with or without .json extension)
+   * @param template Template data to write
+   * @param isShared If true, writes to shared/templates, otherwise to application-specific templates
+   * @param appPath Optional: Application path (required if isShared is false)
    */
   writeTemplate(
     templateName: string,
     template: ITemplate,
     isShared: boolean,
+    appPath?: string,
   ): void;
 
   /**

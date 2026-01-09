@@ -59,7 +59,14 @@ describe("FrameworkLoader.createApplicationFromFramework", () => {
     } catch {
       // Ignore if not initialized
     }
-    PersistenceManager.initialize(tempDir, storageContextFile, secretFile);
+    PersistenceManager.initialize(
+      tempDir,
+      storageContextFile,
+      secretFile,
+      false, // Disable cache for tests
+      tempJsonDir, // Use test jsonPath
+      path.join(repoRoot, "schemas"), // Use test schemaPath
+    );
     const pm = PersistenceManager.getInstance();
     contextManager = pm.getContextManager();
     loader = new FrameworkLoader(

@@ -31,19 +31,23 @@ export class FileSystemPersistence
   constructor(
     private pathes: IConfiguredPathes,
     private jsonValidator: JsonValidator,
+    private enableCache: boolean = true,
   ) {
     // Initialize handlers
     this.applicationHandler = new ApplicationPersistenceHandler(
       pathes,
       jsonValidator,
+      enableCache,
     );
     this.templateHandler = new TemplatePersistenceHandler(
       pathes,
       jsonValidator,
+      enableCache,
     );
     this.frameworkHandler = new FrameworkPersistenceHandler(
       pathes,
       jsonValidator,
+      enableCache,
     );
 
     // Initialize file watcher
@@ -91,8 +95,8 @@ export class FileSystemPersistence
     return this.templateHandler.loadTemplate(templatePath);
   }
 
-  writeTemplate(templateName: string, template: any, isShared: boolean) {
-    this.templateHandler.writeTemplate(templateName, template, isShared);
+  writeTemplate(templateName: string, template: any, isShared: boolean, appPath?: string) {
+    this.templateHandler.writeTemplate(templateName, template, isShared, appPath);
   }
 
   deleteTemplate(templateName: string, isShared: boolean) {

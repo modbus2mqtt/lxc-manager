@@ -15,6 +15,7 @@ export class TemplatePersistenceHandler {
   constructor(
     private pathes: IConfiguredPathes,
     private jsonValidator: JsonValidator,
+    private enableCache: boolean = true,
   ) {}
 
   resolveTemplatePath(
@@ -84,6 +85,7 @@ export class TemplatePersistenceHandler {
     templateName: string,
     template: ITemplate,
     isShared: boolean,
+    appPath?: string,
   ): void {
     const templateFileName = templateName.endsWith(".json")
       ? templateName
@@ -100,10 +102,15 @@ export class TemplatePersistenceHandler {
       fs.writeFileSync(templateFile, JSON.stringify(template, null, 2));
     } else {
       // Application-specific template - need appPath
-      // This is a limitation - we might need to adjust the interface
-      throw new Error(
-        "Writing application-specific templates requires appPath (not implemented)",
-      );
+      if (!appPath) {
+        throw new Error(
+          "Writing application-specific templates requires appPath parameter",
+        );
+      }
+      const templatesDir = path.join(appPath, "templates");
+      fs.mkdirSync(templatesDir, { recursive: true });
+      const templateFile = path.join(templatesDir, templateFileName);
+      fs.writeFileSync(templateFile, JSON.stringify(template, null, 2));
     }
 
     // Invalidate cache

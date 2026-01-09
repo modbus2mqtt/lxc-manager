@@ -25,14 +25,13 @@ describe("ProxmoxExecution shell quoting", () => {
     const storageContextPath = path.join(testDir, "storagecontext.json");
     fs.writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
 
-    const storageContextPath = path.join(testDir, "storagecontext.json");
     // Close existing instance if any
     try {
       PersistenceManager.getInstance().close();
     } catch {
       // Ignore if not initialized
     }
-    PersistenceManager.initialize(testDir, storageContextPath, secretFilePath);
+    PersistenceManager.initialize(testDir, storageContextPath, secretFilePath, false); // Disable cache for tests
     // Write dummy sshconfig.json for local test
     const dir = path.join(testDir, "local");
     const file = path.join(dir, "sshconfig.json");

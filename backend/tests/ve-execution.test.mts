@@ -24,7 +24,13 @@ beforeAll(() => {
   const storageContextPath = path.join(testDir, "storagecontext.json");
   fs.writeFileSync(storageContextPath, JSON.stringify({}), "utf-8");
 
-  StorageContext.setInstance(testDir, storageContextPath, secretFilePath);
+  // Close existing instance if any
+  try {
+    PersistenceManager.getInstance().close();
+  } catch {
+    // Ignore if not initialized
+  }
+  PersistenceManager.initialize(testDir, storageContextPath, secretFilePath, false); // Disable cache for tests
 });
 
 afterAll(() => {
