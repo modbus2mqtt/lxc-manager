@@ -1,9 +1,0 @@
-{
-  "name": "Test Application",
-  "description": "A test application for documentation generation",
-  "installation": [
-    "set-parameters.json",
-    "test-template.json",
-    "shared-template.json"
-  ]
-}

@@ -1,9 +1,0 @@
-{
-  "name": "Referencing Template",
-  "description": "A template that references other templates",
-  "commands": [
-    {
-      "template": "shared-template.json"
-    }
-  ]
-}
