@@ -169,8 +169,13 @@ function getStorageContextInstance(): StorageContext {
 export class StorageContext extends StorageContextProxy {
   static setInstance = setStorageContextInstance;
   static getInstance = getStorageContextInstance;
-  static VMContext = VMContext;
-  static VMInstallContext = VMInstallContext;
+  // Use getters to avoid initialization order issues
+  static get VMContext() {
+    return VMContext;
+  }
+  static get VMInstallContext() {
+    return VMInstallContext;
+  }
 
   // Constructor for backward compatibility (creates a proxy instance)
   constructor(
