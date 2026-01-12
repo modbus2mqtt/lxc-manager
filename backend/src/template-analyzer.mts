@@ -204,7 +204,6 @@ export class TemplateAnalyzer {
                   appName,
                   "installation" as TaskType,
                   dummyVeContext,
-                  "sh",
                 );
                 
                 const commands = loaded.commands || [];

@@ -42,8 +42,8 @@ export class VeExecutionHostDiscovery {
       "",
       { ...tmplCommand, name: "write-vmids" } as any,
       VeExecutionConstants.HOST_PROBE_TIMEOUT_MS,
-      [scriptPath],
       eventEmitter,
+      [scriptPath],
     );
     
     // Prefer parsed outputsRaw (name/value) if available

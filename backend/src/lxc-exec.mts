@@ -76,12 +76,12 @@ export async function exec(
     }
 
     const pm = PersistenceManager.getInstance();
-    const contextManager = pm.getContextManager();
+    const cm = pm.getContextManager();
     const templateProcessor = new TemplateProcessor({
       schemaPath,
       jsonPath,
       localPath: resolvedLocalPath,
-    }, contextManager, pm.getPersistence());
+    }, cm, pm.getPersistence());
 
     if (!paramsFile) {
       const veContext = PersistenceManager.getInstance().getContextManager().getCurrentVEContext();
@@ -120,7 +120,7 @@ export async function exec(
         );
       }
     }
-    const veContext = StorageContext.getInstance().getCurrentVEContext();
+    const veContext = cm.getCurrentVEContext();
     if (!veContext) {
       console.error(
         "VE context not set. Please configure SSH host/port first.",
@@ -147,7 +147,7 @@ export async function exec(
     const execInstance = new VeExecution(
       loaded.commands,
       params,
-      StorageContext.getInstance().getCurrentVEContext(),
+      cm.getCurrentVEContext(),
       defaults,
     );
     execInstance.on("message", (msg) => {

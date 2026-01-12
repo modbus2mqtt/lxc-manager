@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { StorageContext } from "./storagecontext.mjs";
+import { PersistenceManager } from "./persistence/persistence-manager.mjs";
 import { VEWebApp } from "./webapp.mjs";
 import { exec as execCommand } from "./lxc-exec.mjs";
 import { validateAllJson } from "./validateAllJson.mjs";
@@ -129,8 +129,9 @@ async function startWebApp(
   storageContextPath: string,
   secretFilePath: string,
 ) {
-  StorageContext.setInstance(localPath, storageContextPath, secretFilePath);
-  const webApp = new VEWebApp(StorageContext.getInstance());
+  PersistenceManager.initialize(localPath, storageContextPath, secretFilePath);
+  const pm = PersistenceManager.getInstance();
+  const webApp = new VEWebApp(pm.getContextManager());
   const port = process.env.PORT || 3000;
   webApp.httpServer.listen(port, () => {
     console.log(`VEWebApp listening on port ${port}`);
@@ -186,8 +187,8 @@ async function runUpdatedocCommand(applicationName?: string, localPathArg?: stri
   await validateAllJson(localPathArg);
   console.log("\n✓ Validation successful. Proceeding with documentation generation...\n");
 
-  // Initialize StorageContext
-  StorageContext.setInstance(
+  // Initialize PersistenceManager
+  PersistenceManager.initialize(
     localPath,
     path.join(localPath, "storagecontext.json"),
     path.join(localPath, "secret.txt"),

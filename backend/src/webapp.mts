@@ -430,7 +430,8 @@ export class VEWebApp {
     });
     this.app.get(ApiUri.Applications, (req, res) => {
       try {
-        const applications = storageContext.listApplications();
+        const pm = PersistenceManager.getInstance();
+        const applications = pm.getApplicationService().listApplicationsForFrontend();
         const payload: IApplicationsResponse = applications;
         res.json(payload).status(200);
       } catch (err: any) {
@@ -516,6 +517,7 @@ export class VEWebApp {
             .json({ error: "No VE context available. Please configure SSH first." });
         }
 
+        const pm = PersistenceManager.getInstance();
         const frameworkLoader = new FrameworkLoader(
           {
             schemaPath: storageContext.getJsonPath().replace(/\/json$/, "/schemas"),
@@ -523,6 +525,7 @@ export class VEWebApp {
             localPath: storageContext.getLocalPath(),
           },
           storageContext,
+          pm.getPersistence(),
         );
 
         const parameters = await frameworkLoader.getParameters(
@@ -573,6 +576,7 @@ export class VEWebApp {
               localPath: pm.getPathes().localPath,
             },
             storageContext,
+            pm.getPersistence(),
           );
 
           const applicationId = await frameworkLoader.createApplicationFromFramework(

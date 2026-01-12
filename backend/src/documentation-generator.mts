@@ -215,7 +215,6 @@ export class DocumentationGenerator {
         applicationName,
         "installation" as TaskType,
         dummyVeContext,
-        "sh", // Use sh for documentation generation
       );
       
       // Use data from loadApplication

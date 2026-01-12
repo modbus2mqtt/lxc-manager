@@ -64,8 +64,7 @@ export class DocumentationGenerator {
     // Note: Application-specific directories will be created in generateApplicationDocumentation
 
     const pm = PersistenceManager.getInstance();
-    const storageContext = pm.getContextManager();
-    const allApps = storageContext.getAllAppNames();
+    const allApps = pm.getApplicationService().getAllAppNames();
 
     // Map to collect which applications use which templates
     const templateUsageMap = new Map<string, Set<string>>();  // template name -> set of app names
@@ -109,8 +108,7 @@ export class DocumentationGenerator {
   private checkMissingMarkdownFiles(applicationName?: string): void {
     const missingFiles: string[] = [];
     const pm = PersistenceManager.getInstance();
-    const storageContext = pm.getContextManager();
-    const allApps = storageContext.getAllAppNames();
+    const allApps = pm.getApplicationService().getAllAppNames();
 
     const appsToCheck = applicationName 
       ? [[applicationName, allApps.get(applicationName)!].filter(([, appPath]) => appPath)]
@@ -214,7 +212,6 @@ export class DocumentationGenerator {
         applicationName,
         "installation" as TaskType,
         dummyVeContext,
-        "sh", // Use sh for documentation generation
       );
       
       // Use data from loadApplication

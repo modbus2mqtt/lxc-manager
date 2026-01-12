@@ -15,6 +15,7 @@ import { TaskType, IParameter, IPostFrameworkCreateApplicationBody } from "./typ
 import { IVEContext } from "./backend-types.mjs";
 import { FileSystemPersistence } from "./persistence/filesystem-persistence.mjs";
 import { IFrameworkPersistence, IApplicationPersistence, ITemplatePersistence } from "./persistence/interfaces.mjs";
+import { PersistenceManager } from "./persistence/persistence-manager.mjs";
 
 export interface IReadFrameworkOptions {
   framework?: IFramework;
@@ -30,7 +31,9 @@ export class FrameworkLoader {
     private applicationLoader?: ApplicationLoader,
   ) {
     if (!this.applicationLoader) {
-      this.applicationLoader = new ApplicationLoader(this.pathes, this.persistence, this.storage);
+      // ApplicationLoader expects StorageContext | undefined
+      const storageContext = this.storage instanceof StorageContext ? this.storage : undefined;
+      this.applicationLoader = new ApplicationLoader(this.pathes, this.persistence, storageContext);
     }
   }
 
@@ -66,7 +69,11 @@ export class FrameworkLoader {
       this.addErrorToOptions(opts, e);
     }
 
-    const templateProcessor = new TemplateProcessor(this.pathes, this.storage, this.persistence);
+    // TemplateProcessor expects ContextManager, not StorageContext
+    const contextManager = this.storage instanceof ContextManager 
+      ? this.storage 
+      : (this.storage as any).contextManager || PersistenceManager.getInstance().getContextManager();
+    const templateProcessor = new TemplateProcessor(this.pathes, contextManager, this.persistence);
     const loaded = await templateProcessor.getParameters(
       frameworkData.extends,
       task,
@@ -114,7 +121,11 @@ export class FrameworkLoader {
 
     // Get all parameters from base application to find parameter definitions
     // No veContext needed - we only need parameter definitions, not execution
-    const templateProcessor = new TemplateProcessor(this.pathes, this.storage, this.persistence);
+    // TemplateProcessor expects ContextManager, not StorageContext
+    const contextManager = this.storage instanceof ContextManager 
+      ? this.storage 
+      : (this.storage as any).contextManager || PersistenceManager.getInstance().getContextManager();
+    const templateProcessor = new TemplateProcessor(this.pathes, contextManager, this.persistence);
     const allParameters = await templateProcessor.getParameters(
       framework.extends,
       "installation",
@@ -201,6 +212,7 @@ export class FrameworkLoader {
 
     // Create application.json
     // Get installation templates from base application
+    // Note: 'id' is not part of the schema - it's added when reading the application
     const baseInstallation = baseApplication.installation || [];
     const applicationJson = {
       name: request.name,

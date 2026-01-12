@@ -118,8 +118,9 @@ export class VeExecutionCommandProcessor {
       }
 
       // Extract interpreter from shebang (first line)
-      const firstLine = scriptContent.split('\n')[0];
-      if (firstLine.startsWith('#!')) {
+      const lines = scriptContent.split('\n');
+      const firstLine = lines[0];
+      if (firstLine && firstLine.startsWith('#!')) {
         const shebang = firstLine.substring(2).trim();
         // Parse shebang: /usr/bin/env python3 -> ['python3']
         // or /usr/bin/python3 -> ['/usr/bin/python3']
@@ -129,12 +130,15 @@ export class VeExecutionCommandProcessor {
         if (shebang.includes(' ')) {
           const parts = shebang.split(/\s+/).filter(s => s.length > 0);
           // Handle /usr/bin/env python3 -> extract 'python3'
-          if (parts[0] === '/usr/bin/env' || parts[0] === '/bin/env' || parts[0] === 'env') {
-            interpreter = parts.slice(1); // Skip 'env', take rest
-          } else if (parts[0].endsWith('/env')) {
-            interpreter = parts.slice(1); // Handle any path ending with /env
-          } else {
-            interpreter = parts; // Use all parts for explicit paths
+          if (parts.length > 0 && parts[0]) {
+            const firstPart = parts[0];
+            if (firstPart === '/usr/bin/env' || firstPart === '/bin/env' || firstPart === 'env') {
+              interpreter = parts.slice(1); // Skip 'env', take rest
+            } else if (firstPart.endsWith('/env')) {
+              interpreter = parts.slice(1); // Handle any path ending with /env
+            } else {
+              interpreter = parts; // Use all parts for explicit paths
+            }
           }
         } else {
           interpreter = [shebang];
