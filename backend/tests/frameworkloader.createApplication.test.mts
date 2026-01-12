@@ -1,18 +1,20 @@
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
-import fs, { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, copyFileSync } from "node:fs";
+import fs, { mkdtempSync, rmSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { PersistenceManager } from "@src/persistence/persistence-manager.mjs";
 import { FrameworkLoader } from "@src/frameworkloader.mjs";
-import { VEConfigurationError } from "@src/backend-types.mjs";
+import { ContextManager } from "@src/context-manager.mjs";
 import { IPostFrameworkCreateApplicationBody } from "@src/types.mjs";
+import { IApplication } from "@src/backend-types.mjs";
+import { ITemplate } from "@src/types.mjs";
 
 describe("FrameworkLoader.createApplicationFromFramework", () => {
   let tempDir: string;
   let tempJsonDir: string;
   let repoRoot: string;
-  let contextManager: ReturnType<typeof PersistenceManager.getInstance>["getContextManager"];
+  let contextManager: ContextManager;
   let loader: FrameworkLoader;
 
   beforeEach(() => {
@@ -28,7 +30,6 @@ describe("FrameworkLoader.createApplicationFromFramework", () => {
     const realJsonPath = path.join(repoRoot, "json");
     const frameworksDir = path.join(tempJsonDir, "frameworks");
     const applicationsDir = path.join(tempJsonDir, "applications");
-    const sharedDir = path.join(tempJsonDir, "shared");
     mkdirSync(frameworksDir, { recursive: true });
     mkdirSync(applicationsDir, { recursive: true });
 
@@ -138,7 +139,12 @@ describe("FrameworkLoader.createApplicationFromFramework", () => {
     expect(existsSync(appJsonPath)).toBe(true);
 
     const validator = PersistenceManager.getInstance().getJsonValidator();
-    const appData = validator.serializeJsonFileWithSchema(appJsonPath, "application.schema.json");
+    // Read and validate the application.json file
+    // Note: The file should NOT contain 'id' - it's added when reading via persistence
+    const appDataRaw = JSON.parse(fs.readFileSync(appJsonPath, "utf-8"));
+    // Verify that 'id' is not in the file
+    expect(appDataRaw).not.toHaveProperty("id");
+    const appData = validator.serializeJsonFileWithSchema(appJsonPath, "application.schema.json") as IApplication;
     expect(appData.name).toBe("Test Application");
     expect(appData.description).toBe("A test application created from framework");
     expect(appData.extends).toBe("npm-nodejs");
@@ -150,7 +156,7 @@ describe("FrameworkLoader.createApplicationFromFramework", () => {
     const setParamsPath = path.join(tempDir, "applications", "test-app", "templates", "test-app-parameters.json");
     expect(existsSync(setParamsPath)).toBe(true);
 
-    const templateData = validator.serializeJsonFileWithSchema(setParamsPath, "template.schema.json");
+    const templateData = validator.serializeJsonFileWithSchema(setParamsPath, "template.schema.json") as ITemplate;
     expect(templateData.name).toBe("Set Parameters");
     expect(Array.isArray(templateData.commands)).toBe(true);
     expect(templateData.commands.length).toBeGreaterThan(0);

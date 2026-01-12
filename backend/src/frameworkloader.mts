@@ -223,7 +223,9 @@ export class FrameworkLoader {
     };
 
     // Write application.json using persistence
-    this.persistence.writeApplication(request.applicationId, applicationJson);
+    // Note: We pass applicationJson without 'id' - it will be added when reading
+    // Type assertion needed because writeApplication expects IApplication, but we don't want to write 'id'
+    this.persistence.writeApplication(request.applicationId, applicationJson as any);
 
     // Write icon if provided
     if (request.iconContent) {
