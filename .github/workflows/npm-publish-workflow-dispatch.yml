@@ -68,8 +68,8 @@ jobs:
           echo "::endgroup::"
           echo "::group::Packing npm tarball ..."
           info=$(npm pack --json)
-          tarball=$(node -e "const i=JSON.parse(process.env.INFO); console.log(i[0].filename)" INFO="$info")
-          version=$(node -e "const i=JSON.parse(process.env.INFO); console.log(i[0].version)" INFO="$info")
+          tarball=$(echo "$info" | grep -o '"filename": "[^"]*"' | sed 's/"filename": "\(.*\)"/\1/')
+          version=$(echo "$info" | grep -o '"version": "[^"]*"' | sed 's/"version": "\(.*\)"/\1/')
           mv "$tarball" docker/lxc-manager.tgz
           echo "tarball=docker/lxc-manager.tgz" >> $GITHUB_OUTPUT
           echo "version=$version" >> $GITHUB_OUTPUT
