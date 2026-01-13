@@ -7,7 +7,8 @@ set -eu
 
 # Static GitHub source configuration
 OCI_OWNER="modbus2mqtt"
-OWNER="volkmarnissen"
+#OWNER="volkmarnissen"
+OWNER="modbus2mqtt"
 REPO="lxc-manager"
 BRANCH="main"
 OCI_IMAGE="ghcr.io/${OCI_OWNER}/lxc-manager:latest"
