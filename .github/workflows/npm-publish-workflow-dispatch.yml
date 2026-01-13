@@ -115,6 +115,149 @@ jobs:
           echo "::endgroup::"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPMJS }}
+  docker_image:
+    if: ${{ inputs.job == 'all' }}
+    needs: npm_publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout release tag
+        run: |
+          git fetch --tags
+          git checkout ${{ needs.npm_publish.outputs.tag }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Build project and create npm pack tarball
+        id: pack
+        run: |
+          set -euo pipefail
+          npm ci
+          echo "::group::Building project frontend ..."
+          (cd frontend && npm ci && npm run build)
+          echo "::endgroup::"
+          echo "::group::Building backend  ..."
+          (cd backend && npm ci && npm run build)
+          echo "::endgroup::"
+          echo "::group::Building root  ..."
+          (npm ci && npm run build)
+          echo "::endgroup::"
+          echo "::group::Packing npm tarball ..."
+          info=$(npm pack --json)
+          tarball=$(node -e "const i=JSON.parse(process.env.INFO); console.log(i[0].filename)" INFO="$info")
+          version=$(node -e "const i=JSON.parse(process.env.INFO); console.log(i[0].version)" INFO="$info")
+          mv "$tarball" docker/lxc-manager.tgz
+          echo "tarball=docker/lxc-manager.tgz" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image from npm pack
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.npm-pack
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/lxc-manager:${{ steps.pack.outputs.version }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/lxc-manager:latest
+          build-args: |
+            NPM_TARBALL=${{ steps.pack.outputs.tarball }}
+            BUILD_VERSION=${{ steps.pack.outputs.version }}
+            BUILD_REF=${{ github.sha }}
+            BUILD_DATE=${{ github.run_started_at }}
+            BUILD_REPOSITORY=${{ github.repository }}
+
+  docker_image_only:
+    if: ${{ inputs.job == 'docker' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set version (docker only)
+        id: set-version
+        run: |
+          set -euo pipefail
+          git config --global user.email "noreply@carcam360.de" 
+          git config --global user.name "Workflow User"
+          if [ -n "${{ inputs.version_number }}" ]; then
+            version="$(npm version ${{ inputs.version_number }} | sed -e 's/^v//g' )"
+            git push
+          else
+            version="$(node -p "require('./package.json').version")"
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Build project and create npm pack tarball
+        id: pack_only
+        run: |
+          set -euo pipefail
+          npm ci
+          echo "::group::Building project frontend ..."
+          (cd frontend && npm ci && npm run build)
+          echo "::endgroup::"
+          echo "::group::Building backend  ..."
+          (cd backend && npm ci && npm run build)
+          echo "::endgroup::"
+          echo "::group::Building root  ..."
+          (npm ci && npm run build)
+          echo "::endgroup::"
+          echo "::group::Packing npm tarball ..."
+          info=$(npm pack --json)
+          tarball=$(node -e "const i=JSON.parse(process.env.INFO); console.log(i[0].filename)" INFO="$info")
+          mv "$tarball" docker/lxc-manager.tgz
+          echo "tarball=docker/lxc-manager.tgz" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image from npm pack
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.npm-pack
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/lxc-manager:${{ steps.set-version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/lxc-manager:latest
+          build-args: |
+            NPM_TARBALL=${{ steps.pack_only.outputs.tarball }}
+            BUILD_VERSION=${{ steps.set-version.outputs.version }}
+            BUILD_REF=${{ github.sha }}
+            BUILD_DATE=${{ github.run_started_at }}
+            BUILD_REPOSITORY=${{ github.repository }}
   build_assets:
     if: ${{ needs.npm_publish.outputs.isRelease != '' }}
     permissions:
