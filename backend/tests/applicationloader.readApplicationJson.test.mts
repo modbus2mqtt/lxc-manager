@@ -18,7 +18,7 @@ try {
 } catch {
   // Ignore if not initialized
 }
-PersistenceManager.initialize(localPath, storageContextFilePath, secretFilePath);
+PersistenceManager.initialize(localPath, storageContextFilePath, secretFilePath, false); // Disable cache for tests
 
 function writeJson(filePath: string, data: any) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
