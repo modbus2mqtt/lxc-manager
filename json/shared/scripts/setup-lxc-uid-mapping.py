@@ -112,13 +112,23 @@ def update_lxc_config(config_path, idmap_entries):
         f.writelines(lines)
 
 def main():
-    uid_str = os.environ.get('uid', '0')
-    gid_str = os.environ.get('gid', '0')
-    vm_id = os.environ.get('vm_id', '')
+    # Get parameters from template variables (will be replaced by sed during script download)
+    uid_str = "{{ uid }}"
+    gid_str = "{{ gid }}"
+    vm_id = "{{ vm_id }}"
     
+    # Mock paths for testing (still supported via environment variables)
     subuid_path = os.environ.get('MOCK_SUBUID_PATH', '/etc/subuid')
     subgid_path = os.environ.get('MOCK_SUBGID_PATH', '/etc/subgid')
     config_dir = os.environ.get('MOCK_CONFIG_DIR', '/etc/pve/lxc')
+    
+    # Normalize parameters (empty/NOT_DEFINED means not set)
+    if not uid_str or uid_str == "NOT_DEFINED" or uid_str.strip() == "":
+        uid_str = "0"
+    if not gid_str or gid_str == "NOT_DEFINED" or gid_str.strip() == "":
+        gid_str = "0"
+    if not vm_id or vm_id == "NOT_DEFINED" or vm_id.strip() == "":
+        vm_id = ""
     
     uid_list = parse_ids(uid_str)
     gid_list = parse_ids(gid_str)

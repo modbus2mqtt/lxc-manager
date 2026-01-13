@@ -4,7 +4,7 @@ import path from "path";
 import os from "os";
 import { spawnSync } from "child_process";
 
-describe("setup-lxc-uid-mapping.sh", () => {
+describe("setup-lxc-uid-mapping.py", () => {
   let tempDir: string;
   let subuidPath: string;
   let subgidPath: string;
@@ -16,7 +16,7 @@ describe("setup-lxc-uid-mapping.sh", () => {
     subuidPath = path.join(tempDir, "subuid");
     subgidPath = path.join(tempDir, "subgid");
     configDir = path.join(tempDir, "lxc");
-    scriptPath = path.join(__dirname, "../../json/shared/scripts/setup-lxc-uid-mapping.sh");
+    scriptPath = path.join(__dirname, "../../json/shared/scripts/setup-lxc-uid-mapping.py");
     await fs.ensureDir(configDir);
   });
 
@@ -27,19 +27,24 @@ describe("setup-lxc-uid-mapping.sh", () => {
   });
 
   function runScript(uid: string, gid: string, vmId?: string): { stdout: string; stderr: string; exitCode: number } {
+    // Read script content and replace template variables (like execute_script_from_github does)
+    let scriptContent = fs.readFileSync(scriptPath, "utf-8");
+    scriptContent = scriptContent
+      .replace(/\{\{\s*uid\s*\}\}/g, uid)
+      .replace(/\{\{\s*gid\s*\}\}/g, gid)
+      .replace(/\{\{\s*vm_id\s*\}\}/g, vmId || "");
+
+    // Set environment variables for mock paths
     const env = {
       ...process.env,
-      uid,
-      gid,
       MOCK_SUBUID_PATH: subuidPath,
       MOCK_SUBGID_PATH: subgidPath,
       MOCK_CONFIG_DIR: configDir,
     };
-    if (vmId) {
-      env.vm_id = vmId;
-    }
 
-    const result = spawnSync(scriptPath, [], {
+    // Execute the modified script via stdin
+    const result = spawnSync("python3", [], {
+      input: scriptContent,
       env,
       encoding: "utf-8",
       timeout: 5000,
