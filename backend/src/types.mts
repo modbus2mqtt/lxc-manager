@@ -81,6 +81,7 @@ export interface IParameter {
   name: string;
   type: ParameterType;
   description?: string;
+  multiline?: boolean;
   required?: boolean;
   secure?: boolean;
   advanced?: boolean;

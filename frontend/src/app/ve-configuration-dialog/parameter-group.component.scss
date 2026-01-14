@@ -1,13 +1,14 @@
 .param-group {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 280px;
-  flex-shrink: 0;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
   padding: 0.75rem;
   border-radius: 8px;
   background: #fafbfc;
   box-shadow: 0 2px 8px 0 #0001;
+  box-sizing: border-box;
 }
 
 .group-title {
@@ -22,7 +23,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .param-field {
@@ -61,8 +62,8 @@
 }
 
 .expandable-help {
-  width: 200pt;
-  min-width: 200pt;
+  width: 100%;
+  min-width: 0;
   margin-top: -0.5rem;
   margin-bottom: 1rem;
   padding: 0.75rem;
@@ -73,6 +74,7 @@
   line-height: 1.5;
   color: #333;
   animation: slideDown 0.2s ease-out;
+  box-sizing: border-box;
 
   :deep(p) {
     margin: 0.5em 0;

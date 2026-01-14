@@ -1,0 +1,16 @@
+{
+  "name": "Lxc Manager",
+  "description": "LXC Manager Docker Image",
+  "extends": "oci-image",
+  "icon": "favicon.svg",
+  "installation": [
+    {
+      "name": "lxc-manager-parameters.json",
+      "before": "011-get-oci-image.json"
+    }
+  ],
+  "url": "https://github.com/modbus2mqtt/lxc-manager",
+  "documentation": "https://github.com/modbus2mqtt/lxc-manager/blob/main/README.md",
+  "source": "https://github.com/modbus2mqtt/lxc-manager",
+  "vendor": "Carcam 360"
+}

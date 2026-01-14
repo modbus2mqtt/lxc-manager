@@ -67,7 +67,11 @@
 						} @else {
 						<mat-form-field appearance="outline" class="param-field">
 						<mat-label>{{ param.name }}</mat-label>
-						<input matInput [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above" />
+						@if (param.multiline) {
+						  <textarea matInput rows="3" [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above"></textarea>
+						} @else {
+						  <input matInput [formControlName]="param.id" [required]="!!param.required" [matTooltip]="getTooltip(param)" matTooltipPosition="above" />
+						}
 						@if (param.default !== undefined) {
 						<mat-hint>Default: {{ param.default }}</mat-hint>
 						}
