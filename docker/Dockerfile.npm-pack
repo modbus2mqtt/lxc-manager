@@ -49,14 +49,12 @@ RUN cat > /usr/local/bin/entrypoint-wrapper.sh <<'EOF'
 # Wrapper to ensure lxc-manager runs as lxc user, even when started as root
 # Also ensure the SSH key symlink exists so keys persist in /secure/.ssh
 ensure_ssh_setup() {
-  # Create target dir if missing (volume mount may be empty)
+  # Create target dir if missing; on unprivileged LXC with 0700, do it as lxc
   if [ ! -d /secure/.ssh ]; then
-    mkdir -p /secure/.ssh 2>/dev/null || true
-    chmod 700 /secure/.ssh 2>/dev/null || true
-    chown -R lxc:lxc /secure 2>/dev/null || true
+    su -s /bin/sh lxc -c 'mkdir -p /secure/.ssh && chmod 700 /secure/.ssh' 2>/dev/null || true
   fi
   # Ensure symlink points to target
-  if [ ! -L /home/lxc/.ssh ]; then
+  if ! [  -L /home/lxc/.ssh ]; then
     rm -rf /home/lxc/.ssh 2>/dev/null || true
     ln -s /secure/.ssh /home/lxc/.ssh 2>/dev/null || true
     chown -h lxc:lxc /home/lxc/.ssh 2>/dev/null || true
