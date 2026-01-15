@@ -282,14 +282,14 @@ fi
 
 oci_outputs=$(execute_script_from_github \
   "json/shared/scripts/get-oci-image.py" \
-  "ostype,application_id,oci_image" \
+  "ostype,application_id,application_name,oci_image,oci_image_tag" \
   "oci_image=${OCI_IMAGE}" \
   "storage=${storage}" \
   "registry_username=" \
   "registry_password=" \
   "platform=linux/amd64")
 
-IFS=',' read -r ostype application_id application_name resolved_oci_image <<EOF
+IFS=',' read -r ostype application_id application_name resolved_oci_image oci_image_tag <<EOF
 $oci_outputs
 EOF
 
@@ -298,6 +298,9 @@ if [ -z "$application_id" ]; then
 fi
 if [ -z "$resolved_oci_image" ]; then
   resolved_oci_image="${OCI_IMAGE}"
+fi
+if [ -z "$oci_image_tag" ]; then
+  oci_image_tag=""
 fi
 
 echo "  OCI image ready: ${template_path}" >&2
@@ -317,6 +320,7 @@ vm_id=$(execute_script_from_github \
   "application_id=${application_id}" \
   "application_name=${application_name}" \
   "oci_image=${resolved_oci_image}" \
+  "oci_image_tag=${oci_image_tag}" \
   "ostype=${ostype}")
 
 if [ -z "$vm_id" ]; then
@@ -428,6 +432,7 @@ changed_params_json="[
   {\"name\":\"secure_volume_path\",\"value\":\"${secure_volume_path}\"},
   {\"name\":\"application_id\",\"value\":\"${application_id}\"},
   {\"name\":\"oci_image\",\"value\":\"${resolved_oci_image}\"},
+  {\"name\":\"oci_image_tag\",\"value\":\"${oci_image_tag}\"},
   {\"name\":\"storage\",\"value\":\"${storage}\"}
 ]"
 mkdir -p "$(dirname "${storagecontext_file}")" 2>/dev/null || true

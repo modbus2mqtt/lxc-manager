@@ -112,6 +112,10 @@ OCI_IMAGE_RAW="{{ oci_image }}"
 OCI_IMAGE_VISIBLE=$(printf "%s" "$OCI_IMAGE_RAW" | sed -E 's#^(docker|oci)://##')
 TEMPLATE_PATH_FOR_NOTES="$TEMPLATE_PATH"
 
+OCI_IMAGE_TAG_RAW="{{ oci_image_tag }}"
+OCI_IMAGE_TAG=""
+if [ "$OCI_IMAGE_TAG_RAW" != "NOT_DEFINED" ]; then OCI_IMAGE_TAG="$OCI_IMAGE_TAG_RAW"; fi
+
 APP_ID_RAW="{{ application_id }}"
 APP_NAME_RAW="{{ application_name }}"
 APP_ID=""
@@ -143,6 +147,10 @@ NOTES_TMP=$(mktemp)
     else
       echo "Application ID: $APP_ID"
     fi
+  fi
+  if [ -n "$OCI_IMAGE_TAG" ]; then
+    echo
+    echo "Version: $OCI_IMAGE_TAG"
   fi
   if [ -n "$OCI_IMAGE_VISIBLE" ]; then
     echo

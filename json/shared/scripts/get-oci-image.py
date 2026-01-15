@@ -13,7 +13,7 @@ Parameters (via template variables):
   platform (optional): Target platform (e.g., linux/amd64, linux/arm64). Default: linux/amd64
 
 Output (JSON to stdout):
-    [{"id": "template_path", "value": "storage:vztmpl/image_tag.tar"}, {"id": "ostype", "value": "alpine"}, {"id": "application_id", "value": "lxc-manager"}, {"id": "oci_image", "value": "ghcr.io/modbus2mqtt/lxc-manager:latest"}]
+    [{"id": "template_path", "value": "storage:vztmpl/image_tag.tar"}, {"id": "ostype", "value": "alpine"}, {"id": "application_id", "value": "lxc-manager"}, {"id": "oci_image", "value": "ghcr.io/modbus2mqtt/lxc-manager:latest"}, {"id": "oci_image_tag", "value": "0.17.5"}]
 
 All logs and progress go to stderr.
 
@@ -373,12 +373,18 @@ def main() -> None:
                     log("Inspecting image to detect ostype...")
                     inspect_output = skopeo_inspect(image_ref, registry_username, registry_password)
                     ostype = detect_ostype_from_inspect(inspect_output)
+                    actual_tag = tag
+                    if tag == "latest" or tag.lower() == "latest":
+                        extracted_version = extract_version_from_inspect(inspect_output)
+                        if extracted_version:
+                            actual_tag = extracted_version
                     
                     output = [
                         {"id": "template_path", "value": template_path},
                         {"id": "ostype", "value": ostype},
                         {"id": "application_id", "value": application_id},
-                        {"id": "oci_image", "value": oci_image}
+                        {"id": "oci_image", "value": oci_image},
+                        {"id": "oci_image_tag", "value": actual_tag}
                     ]
                     print(json.dumps(output))
                     sys.exit(0)
@@ -420,7 +426,8 @@ def main() -> None:
                             {"id": "template_path", "value": template_path},
                             {"id": "ostype", "value": ostype},
                             {"id": "application_id", "value": application_id},
-                            {"id": "oci_image", "value": oci_image}
+                            {"id": "oci_image", "value": oci_image},
+                            {"id": "oci_image_tag", "value": actual_tag}
                         ]
                         print(json.dumps(output))
                         sys.exit(0)
@@ -449,7 +456,8 @@ def main() -> None:
         {"id": "template_path", "value": template_path},
         {"id": "ostype", "value": ostype},
         {"id": "application_id", "value": application_id},
-        {"id": "oci_image", "value": oci_image}
+        {"id": "oci_image", "value": oci_image},
+        {"id": "oci_image_tag", "value": actual_tag}
     ]
     print(json.dumps(output))
     sys.exit(0)

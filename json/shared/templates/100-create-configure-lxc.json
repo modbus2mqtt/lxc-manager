@@ -27,6 +27,14 @@
       "description": "Optional: OCI image reference used to create the container (e.g. docker://mariadb:11.0.2). If provided, it will be written into the Proxmox notes (description) as an identifiable line."
     },
     {
+      "id": "oci_image_tag",
+      "name": "OCI Image Tag",
+      "type": "string",
+      "default": "",
+      "advanced": true,
+      "description": "Optional: Actual OCI image tag/version that was downloaded (e.g. 0.17.5). If provided, it will be written into the Proxmox notes as Version." 
+    },
+    {
       "id": "disk_size",
       "name": "Disk size",
       "type": "string",
