@@ -6,9 +6,9 @@ set -eu
 # Downloads OCI image, creates container, mounts volumes, and writes storagecontext.json
 
 # Static GitHub source configuration
-OCI_OWNER="modbus2mqtt"
-#OWNER="volkmarnissen"
-OWNER="modbus2mqtt"
+OCI_OWNER="${OCI_OWNER:-modbus2mqtt}"
+OWNER="${OWNER:-modbus2mqtt}"
+#OWNER="modbus2mqtt"
 REPO="lxc-manager"
 BRANCH="main"
 OCI_IMAGE="ghcr.io/${OCI_OWNER}/lxc-manager:latest"
