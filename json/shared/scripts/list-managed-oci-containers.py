@@ -16,10 +16,11 @@ import json
 import os
 import re
 from pathlib import Path
+from urllib.parse import unquote
 
 
-MANAGED_RE = re.compile(r"oci-lxc-deployer:managed", re.IGNORECASE)
-OCI_MARKER_RE = re.compile(r"oci-lxc-deployer:oci-image\s+(.+?)\s*-->", re.IGNORECASE)
+MANAGED_RE = re.compile(r"(?:oci-lxc-deployer):managed", re.IGNORECASE)
+OCI_MARKER_RE = re.compile(r"(?:oci-lxc-deployer):oci-image\s+(.+?)\s*-->", re.IGNORECASE)
 OCI_VISIBLE_RE = re.compile(r"^\s*OCI image:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 HOSTNAME_RE = re.compile(r"^hostname:\s*(.+?)\s*$", re.MULTILINE)
 
@@ -64,15 +65,16 @@ def main() -> None:
             # Proxmox LXC config "description:" lines often encode newlines as literal "\\n".
             # Normalize so regexes that expect line starts (MULTILINE) work reliably.
             conf_text = conf_text.replace("\\n", "\n")
+            decoded_text = unquote(conf_text)
 
-            if not MANAGED_RE.search(conf_text):
+            if not MANAGED_RE.search(conf_text) and not MANAGED_RE.search(decoded_text):
                 continue
 
-            oci_image = _extract_oci_image(conf_text)
+            oci_image = _extract_oci_image(decoded_text) or _extract_oci_image(conf_text)
             if not oci_image:
                 continue
 
-            hostname = _extract_hostname(conf_text)
+            hostname = _extract_hostname(decoded_text) or _extract_hostname(conf_text)
 
             item = {
                 "vm_id": int(vmid_str),
